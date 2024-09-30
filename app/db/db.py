@@ -2,8 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-URL_DATABASE = 'mysql+pymysql://root@localhost:3306/enterprice_chat'
-# URL_DATABASE = 'mysql+pymysql://root:12345@mysql-container:3306/enterprice_chat'
+URL_DATABASE = 'mysql+mysqlconnector://root:root@db:3306/enterprise_chat'
 
 
 
