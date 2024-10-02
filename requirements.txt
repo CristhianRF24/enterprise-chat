@@ -1,5 +1,11 @@
 fastapi
 uvicorn
 sqlalchemy
-pymysql
 python-multipart
+mysql-connector-python
+spacy
+unidecode
+langchain
+langchain_community
+sentence_transformers
+pypdf

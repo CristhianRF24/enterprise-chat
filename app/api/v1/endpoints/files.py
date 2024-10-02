@@ -7,8 +7,11 @@ from pathlib import Path
 from pydantic import BaseModel
 from app.pdf_processing_pipeline import PDFProcessingPipeline 
 from app.crud.vector_store_crud import create_or_update_vector_store, get_vector_store 
+from dotenv import load_dotenv
+
 import json
 
+load_dotenv()
 router = APIRouter()
 
 UPLOAD_FOLDER = './uploaded_files'
@@ -18,6 +21,7 @@ VECTOR_STORE_JSON = f'{VECTOR_STORE_FOLDER}/vector_store.json'
 class QueryRequest(BaseModel):
     query: str
     k: int
+
 
 @router.post('/uploadfile/')
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -168,3 +172,5 @@ async def search(query_request: QueryRequest, db: Session = Depends(get_db)):
         return {"results": "No matches found for your query"}
 
     return {"results": results}
+
+

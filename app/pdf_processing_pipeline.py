@@ -2,8 +2,6 @@ from pathlib import Path
 import re
 import spacy
 import unidecode 
-import numpy as np
-import pandas as pd
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from langchain_community.document_loaders import PyPDFLoader
@@ -19,7 +17,7 @@ class PDFProcessingPipeline:
 
     def load(self):
         documents = self.loader.load()
-        return documents
+        return documents 
 
     def clean_text(self, text):
         text = text.lower()
