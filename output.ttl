@@ -1,0 +1,121 @@
+@prefix data: <http://example.org/data/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix voc: <http://example.org/vocabulary/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+voc:casa a rdfs:Class ;
+    rdfs:label "casa"^^xsd:string .
+
+voc:files a rdfs:Class ;
+    rdfs:label "files"^^xsd:string .
+
+voc:mascota a rdfs:Class ;
+    rdfs:label "mascota"^^xsd:string .
+
+voc:persona a rdfs:Class ;
+    rdfs:label "persona"^^xsd:string .
+
+voc:vector_stores a rdfs:Class ;
+    rdfs:label "vector_stores"^^xsd:string .
+
+<http://example.org/data/casa/1> a voc:casa ;
+    rdfs:label "casa 1"^^xsd:string ;
+    data:ciudad "La Paz"^^xsd:string ;
+    data:direccion "Calle Falsa 123"^^xsd:string ;
+    data:id 1e+00 ;
+    voc:has_persona <http://example.org/data/persona/1> .
+
+<http://example.org/data/casa/2> a voc:casa ;
+    rdfs:label "casa 2"^^xsd:string ;
+    data:ciudad "Cochabamba"^^xsd:string ;
+    data:direccion "Av. Principal 456"^^xsd:string ;
+    data:id 2e+00 ;
+    voc:has_persona <http://example.org/data/persona/2> .
+
+data:ciudad a rdf:Property ;
+    rdfs:label "ciudad"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:direccion a rdf:Property ;
+    rdfs:label "direccion"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:edad a rdf:Property ;
+    rdfs:label "edad"^^xsd:string ;
+    rdfs:range "int"^^xsd:string .
+
+data:filename a rdf:Property ;
+    rdfs:label "filename"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:filepath a rdf:Property ;
+    rdfs:label "filepath"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+<http://example.org/data/files/15> a voc:files ;
+    rdfs:label "files 15"^^xsd:string ;
+    data:filename "CV file.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/CV file.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 1.5e+01 .
+
+<http://example.org/data/files/16> a voc:files ;
+    rdfs:label "files 16"^^xsd:string ;
+    data:filename "article.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/article.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 1.6e+01 .
+
+data:filetype a rdf:Property ;
+    rdfs:label "filetype"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:id a rdf:Property ;
+    rdfs:label "id"^^xsd:string ;
+    rdfs:range "bigint"^^xsd:string,
+        "int"^^xsd:string .
+
+<http://example.org/data/mascota/1> a voc:mascota ;
+    rdfs:label "Firulais"^^xsd:string ;
+    data:id 1e+00 ;
+    data:nombre "Firulais"^^xsd:string ;
+    data:tipo "perro"^^xsd:string ;
+    voc:has_persona <http://example.org/data/persona/1> .
+
+<http://example.org/data/mascota/2> a voc:mascota ;
+    rdfs:label "Michi"^^xsd:string ;
+    data:id 2e+00 ;
+    data:nombre "Michi"^^xsd:string ;
+    data:tipo "gato"^^xsd:string ;
+    voc:has_persona <http://example.org/data/persona/2> .
+
+data:nombre a rdf:Property ;
+    rdfs:label "nombre"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:persona_id a rdf:Property ;
+    rdfs:label "persona_id"^^xsd:string ;
+    rdfs:range "int"^^xsd:string .
+
+data:tipo a rdf:Property ;
+    rdfs:label "tipo"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+<http://example.org/data/vector_stores/2> a voc:vector_stores ;
+    rdfs:label "vector_stores 2"^^xsd:string ;
+    data:filepath "./vector_stores/vector_store.json"^^xsd:string ;
+    data:id 2e+00 .
+
+<http://example.org/data/persona/1> a voc:persona ;
+    rdfs:label "Juan Perez"^^xsd:string ;
+    data:edad 3e+01 ;
+    data:id 1e+00 ;
+    data:nombre "Juan Perez"^^xsd:string .
+
+<http://example.org/data/persona/2> a voc:persona ;
+    rdfs:label "Maria Lopez"^^xsd:string ;
+    data:edad 2.5e+01 ;
+    data:id 2e+00 ;
+    data:nombre "Maria Lopez"^^xsd:string .
+

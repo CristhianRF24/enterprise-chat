@@ -1,4 +1,5 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
+import rdflib
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text
 from app.crud.file_crud import create_file, file_exists
@@ -8,8 +9,11 @@ from pydantic import BaseModel
 from app.pdf_processing_pipeline import PDFProcessingPipeline 
 from app.crud.vector_store_crud import create_or_update_vector_store, get_vector_store 
 from dotenv import load_dotenv
-
+from app.graphdb_integration import query_sparql, load_ttl_to_graphdb
+from app.rdf_generator import generate_ttl
 import json
+from rdflib import Graph
+
 
 load_dotenv()
 router = APIRouter()
@@ -144,4 +148,24 @@ async def search(query_request: QueryRequest, db: Session = Depends(get_db)):
 
     return {"results": results}
 
+@router.post("/generate-and-load-ttl/")
+def generate_and_load_ttl_endpoint():
+    try:
+        output_path = generate_ttl()
 
+        load_ttl_to_graphdb(output_path)
+
+        return {"message": "Archivo TTL generado y cargado en GraphDB con éxito", "file_path": output_path}
+    except Exception as e:
+        return {"error": str(e)}
+
+def load_graph():
+    g = Graph()
+    g.parse("output.ttl", format="turtle")  
+    return g
+
+@router.post("/sparql/")
+def sparql_query(query):
+    g = load_graph()
+    results = g.query(query)
+    return results
