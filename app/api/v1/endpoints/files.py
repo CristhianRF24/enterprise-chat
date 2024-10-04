@@ -2,7 +2,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text
 from app.crud.file_crud import create_file, file_exists
-from app.db.db import SessionLocal, get_db
+from app.db.db import SessionLocal, get_database_schema, get_db
 from pathlib import Path
 from pydantic import BaseModel
 from app.pdf_processing_pipeline import PDFProcessingPipeline 
@@ -92,38 +92,9 @@ def run_sql(query: str):
 
 
 @router.get("/db/schema/")
-def get_database_schema(db: Session = Depends(get_db)):
-    schema = {}
-    try:
-        
-        connection = db.connection()
-        inspector = inspect(connection)  
-        tables = inspector.get_table_names()
-
-        for table in tables:
-            schema[table] = {
-                "columns": [],
-                "foreign_keys": [],
-                "primary_keys": []
-            }
-            #  add columns
-            for column in inspector.get_columns(table):
-                schema[table]["columns"].append({
-                    "name": column["name"],
-                    "type": str(column["type"]),
-                    "nullable": column["nullable"],
-                    "default": column["default"]
-                })
-            # add foreign keys
-            schema[table]["foreign_keys"] = inspector.get_foreign_keys(table)
-            # add primary keys
-            primary_key_info = inspector.get_pk_constraint(table)
-            schema[table]["primary_keys"] = primary_key_info["constrained_columns"] if "constrained_columns" in primary_key_info else []
-
-        return {"schema": schema}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting schema: {str(e)}")
+def get_db_schema(db: Session = Depends(get_db)):
+    schema_dict = json.loads(get_database_schema())
+    return {"schema": schema_dict}
 
 @router.get('/vector_store/')
 async def get_vector_store_endpoint(db: Session = Depends(get_db)):
