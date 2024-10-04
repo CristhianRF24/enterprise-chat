@@ -20,14 +20,14 @@ voc:vector_stores a rdfs:Class ;
     rdfs:label "vector_stores"^^xsd:string .
 
 <http://example.org/data/casa/1> a voc:casa ;
-    rdfs:label "casa 1"^^xsd:string ;
+    rdfs:label "Calle Falsa 123"^^xsd:string ;
     data:ciudad "La Paz"^^xsd:string ;
     data:direccion "Calle Falsa 123"^^xsd:string ;
     data:id 1e+00 ;
     voc:has_persona <http://example.org/data/persona/1> .
 
 <http://example.org/data/casa/2> a voc:casa ;
-    rdfs:label "casa 2"^^xsd:string ;
+    rdfs:label "Av. Principal 456"^^xsd:string ;
     data:ciudad "Cochabamba"^^xsd:string ;
     data:direccion "Av. Principal 456"^^xsd:string ;
     data:id 2e+00 ;
@@ -54,14 +54,14 @@ data:filepath a rdf:Property ;
     rdfs:range "varchar"^^xsd:string .
 
 <http://example.org/data/files/15> a voc:files ;
-    rdfs:label "files 15"^^xsd:string ;
+    rdfs:label "CV file.pdf"^^xsd:string ;
     data:filename "CV file.pdf"^^xsd:string ;
     data:filepath "./uploaded_files/CV file.pdf"^^xsd:string ;
     data:filetype "application/pdf"^^xsd:string ;
     data:id 1.5e+01 .
 
 <http://example.org/data/files/16> a voc:files ;
-    rdfs:label "files 16"^^xsd:string ;
+    rdfs:label "article.pdf"^^xsd:string ;
     data:filename "article.pdf"^^xsd:string ;
     data:filepath "./uploaded_files/article.pdf"^^xsd:string ;
     data:filetype "application/pdf"^^xsd:string ;
@@ -103,7 +103,7 @@ data:tipo a rdf:Property ;
     rdfs:range "varchar"^^xsd:string .
 
 <http://example.org/data/vector_stores/2> a voc:vector_stores ;
-    rdfs:label "vector_stores 2"^^xsd:string ;
+    rdfs:label "./vector_stores/vector_store.json"^^xsd:string ;
     data:filepath "./vector_stores/vector_store.json"^^xsd:string ;
     data:id 2e+00 .
 

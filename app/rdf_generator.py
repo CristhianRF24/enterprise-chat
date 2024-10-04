@@ -23,13 +23,12 @@ def generate_ttl(output_path="output.ttl"):
     g.bind("rdf", RDF)
     g.bind("rdfs", RDFS)
 
-    def generate_label(row, table):
-        possible_name_columns = ['nombre', 'name', 'apellido', 'last_name', 'first_name']
-        name_parts = [str(row[col]) for col in row.index if col.lower() in possible_name_columns and pd.notna(row[col])]
-        if name_parts:
-            return ' '.join(name_parts)
-        else:
-            return f"{table} {row.iloc[0]}"  
+    # Cambiar la función de generación de etiqueta
+    def generate_label(row):
+        # Usa la segunda columna (índice 1) para crear la etiqueta
+        if len(row) > 1:  # Verifica que haya al menos dos columnas
+            return str(row.iloc[1])  # Usa el valor de la segunda columna como etiqueta
+        return f"Resource {row.iloc[0]}"
 
     schema = get_database_schema()
     schema_dict = json.loads(schema)
@@ -54,7 +53,8 @@ def generate_ttl(output_path="output.ttl"):
             subject = URIRef(data_ns[f"{table}/{row.iloc[0]}"])
             g.add((subject, RDF.type, voc_ns[table]))
 
-            label = generate_label(row, table)
+            # Usa la función modificada para generar la etiqueta
+            label = generate_label(row)
             g.add((subject, RDFS.label, Literal(label, datatype=XSD.string)))
 
             for column in df.columns:
@@ -72,4 +72,4 @@ def generate_ttl(output_path="output.ttl"):
                         g.add((subject, data_ns[column], Literal(str(value), datatype=XSD.string)))
 
     g.serialize(destination=output_path, format="turtle")
-    return output_path 
+    return output_path

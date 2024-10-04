@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from app.pdf_processing_pipeline import PDFProcessingPipeline 
 from app.crud.vector_store_crud import create_or_update_vector_store, get_vector_store 
 from dotenv import load_dotenv
-from app.graphdb_integration import query_sparql, load_ttl_to_graphdb
+from app.graphdb_integration import load_ttl_to_graphdb
 from app.rdf_generator import generate_ttl
 import json
 from rdflib import Graph
