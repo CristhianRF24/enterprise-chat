@@ -9,3 +9,7 @@ langchain
 langchain_community
 sentence_transformers
 pypdf
+python-dotenv
+openai==0.28
+requests
+pydantic
