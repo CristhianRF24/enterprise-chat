@@ -9,10 +9,8 @@ app = FastAPI()
 
 class SQLQueryRequest(BaseModel):
     user_query: str
-
-
-class SQLQueryResponse(BaseModel):
-  
+    model: str
+class SQLQueryResponse(BaseModel): 
     results: list
 
 app.include_router(files.router, prefix="/files", tags=["files"])
@@ -23,7 +21,7 @@ async def read_root():
 
 @app.post("/generate_sql/", response_model=SQLQueryResponse) 
 async def generate_sql(request: SQLQueryRequest, db: Session = Depends(get_db)):
-    sql_query = generate_sql_query(request.user_query, db)
+    sql_query = generate_sql_query(request.user_query, db, model=request.model)
     print('sql_query', sql_query)
 
     if not is_sql_query_safe(sql_query):

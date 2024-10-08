@@ -1,67 +1,82 @@
 from fastapi import HTTPException
+import openai
+import requests
 from requests import Session
 from app.api.v1.endpoints.files import get_database_schema
+from dotenv import load_dotenv
 import json
 import re
-import requests
+import os
 
+load_dotenv()
 
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-Small-Instruct-2409/v1/chat/completions"
-headers = {"Authorization": "Bearer your_token_here"}
-
-
-def generate_sql_query(user_query: str, db: Session) -> str:
+def generate_sql_query(user_query: str, db: Session, model: str ) -> str:
     schema = get_database_schema(db)
 
-    # Mensaje del sistema con el esquema y ejemplo
     system_message = f"""
     Given the following schema, write a SQL query that retrieves the requested information.
     Return the SQL query inside a JSON structure with the key "sql_query".
-
     <example>
     {{
-        "sql_query": "SELECT m.nombre AS nombre_mascota, m.tipo, p.nombre AS nombre_dueno
-        FROM mascota m
-        JOIN persona p ON m.persona_id = p.id", 
-        "original_query": "Muestra los duenos de los perros"
-      }}
+        "sql_query": "SELECT * FROM files",
+        "original_query": "Show me all the files"
+    }}
     </example>
-
     <schema>
     {schema}
     </schema>
     """
-    
+       
+    # print used model
+    print(f"Using model: {model}")
+    if model == "openai":
+        return _call_openai(system_message, user_query)
+    elif model == "mistral":
+        return _call_mistral(system_message, user_query)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid model specified.")
 
+
+def _call_openai(system_message: str, user_query: str) -> str:
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_query}
+        ]
+    )
+
+    response_content = response.choices[0].message["content"]
+    
+    try:
+        response_json = json.loads(response_content)
+        sql_query = response_json.get("sql_query")
+        return sql_query
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Error parsing the OpenAI response.")
+
+
+def _call_mistral(system_message: str, user_query: str) -> str:
+    API_URL = os.getenv("API_URL")
+    headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
+    
     messages = [
         {"role": "system", "content": system_message},
         {"role": "user", "content": user_query}
     ]
 
+    response = requests.post(API_URL, headers=headers, json={"messages": messages})
+    response.raise_for_status() 
+
+    response_content = response.json()
+    sql_query_response = response_content['choices'][0]['message']['content']
+
+ 
+    sql_query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
+    
     try:
-        response = requests.post(API_URL, headers=headers, json={"messages": messages})
-        response.raise_for_status() 
-
-        response_content = response.json()
-        print("Response from API:", response_content)
-
-        sql_query_response = response_content['choices'][0]['message']['content']
-        sql_query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
-        sql_query_dict = json.loads(sql_query_json)
-
-      # Get the SQL query
-        sql_query = sql_query_dict.get("sql_query")
-        if not sql_query:
-            raise HTTPException(status_code=500, detail="No SQL query found in the response.")
-
-        return sql_query 
-
-    except requests.exceptions.HTTPError as e:
-      
-        detail = response.json().get("detail", "Error sin detallar.")
-        raise HTTPException(status_code=500, detail=f"HTTP error occurred: {detail}")
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"JSON decode error: {str(e)}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-
+        response_json = json.loads(sql_query_json)
+        sql_query = response_json.get("sql_query")
+        return sql_query
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Error parsing the Mistral response.")
