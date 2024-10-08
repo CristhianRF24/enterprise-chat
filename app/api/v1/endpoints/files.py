@@ -89,7 +89,7 @@ def run_sql(query: str):
             return {"error": "The query returned an empty result"}
 
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e)} 
 
     finally:
         session.close()
