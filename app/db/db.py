@@ -10,6 +10,7 @@ import json
 
 load_dotenv() 
 
+URL_DATABASE = os.getenv('DATABASE_URL')
 db_config = {
     "host": os.getenv('DB_HOST'), 
     "user": os.getenv('DB_USER'),       
@@ -18,7 +19,6 @@ db_config = {
     "port": os.getenv('DB_PORT')        
 }
 
-URL_DATABASE = os.getenv('DATABASE_URL')
 
 engine = create_engine(URL_DATABASE)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -30,8 +30,6 @@ def get_db():
         yield db
     finally:
         db.close()
-        
-
 
 def execute_sql_query(query: str, db: Session) -> List[Dict]:
     try:

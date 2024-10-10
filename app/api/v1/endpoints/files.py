@@ -1,15 +1,19 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
+import rdflib
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text
 from app.crud.file_crud import create_file, file_exists
-from app.db.db import SessionLocal, get_db
+from app.db.db import SessionLocal, get_database_schema, get_db
 from pathlib import Path
 from pydantic import BaseModel
 from app.pdf_processing_pipeline import PDFProcessingPipeline 
 from app.crud.vector_store_crud import create_or_update_vector_store, get_vector_store 
 from dotenv import load_dotenv
-
+from app.graphdb_integration import load_ttl_to_graphdb
+from app.rdf_generator import generate_ttl
 import json
+from rdflib import Graph
+
 
 load_dotenv()
 router = APIRouter()
@@ -85,45 +89,16 @@ def run_sql(query: str):
             return {"error": "The query returned an empty result"}
 
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e)} 
 
     finally:
         session.close()
 
 
 @router.get("/db/schema/")
-def get_database_schema(db: Session = Depends(get_db)):
-    schema = {}
-    try:
-        
-        connection = db.connection()
-        inspector = inspect(connection)  
-        tables = inspector.get_table_names()
-
-        for table in tables:
-            schema[table] = {
-                "columns": [],
-                "foreign_keys": [],
-                "primary_keys": []
-            }
-            #  add columns
-            for column in inspector.get_columns(table):
-                schema[table]["columns"].append({
-                    "name": column["name"],
-                    "type": str(column["type"]),
-                    "nullable": column["nullable"],
-                    "default": column["default"]
-                })
-            # add foreign keys
-            schema[table]["foreign_keys"] = inspector.get_foreign_keys(table)
-            # add primary keys
-            primary_key_info = inspector.get_pk_constraint(table)
-            schema[table]["primary_keys"] = primary_key_info["constrained_columns"] if "constrained_columns" in primary_key_info else []
-
-        return {"schema": schema}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting schema: {str(e)}")
+def get_db_schema(db: Session = Depends(get_db)):
+    schema_dict = json.loads(get_database_schema())
+    return {"schema": schema_dict}
 
 @router.get('/vector_store/')
 async def get_vector_store_endpoint(db: Session = Depends(get_db)):
@@ -173,4 +148,24 @@ async def search(query_request: QueryRequest, db: Session = Depends(get_db)):
 
     return {"results": results}
 
+@router.post("/generate-and-load-ttl/")
+def generate_and_load_ttl_endpoint():
+    try:
+        output_path = generate_ttl()
 
+        load_ttl_to_graphdb(output_path)
+
+        return {"message": "Archivo TTL generado y cargado en GraphDB con éxito", "file_path": output_path}
+    except Exception as e:
+        return {"error": str(e)}
+
+def load_graph():
+    g = Graph()
+    g.parse("output.ttl", format="turtle")  
+    return g
+
+@router.post("/sparql/")
+def sparql_query(query):
+    g = load_graph()
+    results = g.query(query)
+    return results

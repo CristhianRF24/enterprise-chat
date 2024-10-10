@@ -53,19 +53,19 @@ data:filepath a rdf:Property ;
     rdfs:label "filepath"^^xsd:string ;
     rdfs:range "varchar"^^xsd:string .
 
-<http://example.org/data/files/15> a voc:files ;
-    rdfs:label "CV file.pdf"^^xsd:string ;
-    data:filename "CV file.pdf"^^xsd:string ;
-    data:filepath "./uploaded_files/CV file.pdf"^^xsd:string ;
-    data:filetype "application/pdf"^^xsd:string ;
-    data:id 1.5e+01 .
-
-<http://example.org/data/files/16> a voc:files ;
+<http://example.org/data/files/18> a voc:files ;
     rdfs:label "article.pdf"^^xsd:string ;
     data:filename "article.pdf"^^xsd:string ;
     data:filepath "./uploaded_files/article.pdf"^^xsd:string ;
     data:filetype "application/pdf"^^xsd:string ;
-    data:id 1.6e+01 .
+    data:id 1.8e+01 .
+
+<http://example.org/data/files/19> a voc:files ;
+    rdfs:label "CV file.pdf"^^xsd:string ;
+    data:filename "CV file.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/CV file.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 1.9e+01 .
 
 data:filetype a rdf:Property ;
     rdfs:label "filetype"^^xsd:string ;
