@@ -15,7 +15,18 @@ load_dotenv()
 def generate_sql_query(user_query: str, db: Session, model: str ) -> str:
     schema = get_database_schema(db)
 
-    system_message = f"""
+    system_message = create_system_message(schema)
+       
+    if model == "openai":
+        return _call_openai(system_message, user_query, "sql")
+    elif model == "mistral":
+        return _call_mistral(system_message, user_query, "sql")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid model specified.")
+
+def create_system_message(schema: str) -> str:
+  
+    return f"""
     Given the following schema, write a SQL query that retrieves the requested information.
     Return the SQL query inside a JSON structure with the key "sql_query".
     <example>
@@ -28,15 +39,6 @@ def generate_sql_query(user_query: str, db: Session, model: str ) -> str:
     {schema}
     </schema>
     """
-       
-    # print used model
-    print(f"Using model: {model}")
-    if model == "openai":
-        return _call_openai(system_message, user_query, "sql")
-    elif model == "mistral":
-        return _call_mistral(system_message, user_query, "sql")
-    else:
-        raise HTTPException(status_code=400, detail="Invalid model specified.")
 
 def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
     generate_ttl()
@@ -66,20 +68,18 @@ def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
 def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_query}
-        ]
-    )
-
-    response_content = response.choices[0].message["content"]
-    
     try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_query}
+            ]
+        )
+        response_content = response.choices[0].message["content"]
         response_json = json.loads(response_content)
         if query_type == "sql":
-            return response_json.get("sql_query")
+            return extract_sql_query(response_content)
         elif query_type == "sparql":
             return response_json.get("sparql_query")
     except json.JSONDecodeError:
@@ -87,28 +87,46 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
 
 
 def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
-    API_URL = os.getenv("API_URL")
-    headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
-    
-    messages = [
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": user_query}
-    ]
-
-    response = requests.post(API_URL, headers=headers, json={"messages": messages})
-    response.raise_for_status() 
-
-    response_content = response.json()
-    sql_query_response = response_content['choices'][0]['message']['content']
-
- 
-    query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
-    
     try:
+        API_URL = os.getenv("API_URL")
+        headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_query}
+        ]
+
+        response = requests.post(API_URL, headers=headers, json={"messages": messages})
+        response.raise_for_status() 
+
+        response_content = response.json()
+        sql_query_response = response_content['choices'][0]['message']['content']
+    
+        query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
         response_json = json.loads(query_json)
+        
         if query_type == "sql":
-            return response_json.get("sql_query")
+            return extract_sql_query(sql_query_response)
         elif query_type == "sparql":
             return response_json.get("sparql_query")
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Error parsing the Mistral response.")
+
+def extract_sql_query(response_content: str) -> str:
+    try:
+        match = re.search(r'{.*}', response_content, re.DOTALL)
+        
+        if not match:
+            raise HTTPException(status_code=500, detail="No JSON found in model response.")
+        
+        sql_query_json = match.group(0)
+        # Convert the JSON block into a Python object
+        response_json = json.loads(sql_query_json)
+        sql_query = response_json.get("sql_query")
+        
+        if not sql_query:
+            raise HTTPException(status_code=500, detail="No SQL query found in the response.")
+        
+        return sql_query
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Error parsing the model response.")
