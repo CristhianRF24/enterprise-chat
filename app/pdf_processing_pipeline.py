@@ -4,11 +4,12 @@ import spacy
 import unidecode 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
-from langchain_community.document_loaders import PyPDFLoader
+import fitz 
+from langchain.docstore.document import Document
+
 
 class PDFProcessingPipeline:
     def __init__(self, file_path, chunk_size=2000, chunk_overlap=500):
-        self.loader = PyPDFLoader(file_path)
         self.splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
         self.vector_store = None 
@@ -16,8 +17,15 @@ class PDFProcessingPipeline:
         self.file_path = file_path
 
     def load(self):
-        documents = self.loader.load()
-        return documents 
+        print("aqui estoy")
+        doc = fitz.open(self.file_path)
+        documents = []
+    
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            text = page.get_text()
+            documents.append(Document(page_content=text, metadata={"page_number": page_num + 1}))
+        return documents
 
     def clean_text(self, text):
         text = text.lower()

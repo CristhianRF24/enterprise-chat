@@ -22,6 +22,7 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
+from app.rdf_generator import generate_ttl
 
 def create_system_message(schema: str) -> str:
   
@@ -39,8 +40,34 @@ def create_system_message(schema: str) -> str:
     </schema>
     """
 
+def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
+    generate_ttl()
+    with open("output.ttl", 'r') as f:
+        rdf_content = f.read()
+    
+    system_message = f"""
+    Given the following RDF schema, write a SPARQL query that retrieves the requested information.
+    Return ONLY the SPARQL query inside a JSON structure with the key "sparql_query".
+    <example>
+    {{
+        "sparql_query": "SELECT ?s ?p ?o WHERE {{ ?s ?p ?o }}",
+        "original_query": "Get all triples from the dataset"
+    }}
+    </example>
+    <rdf_schema>
+    {rdf_content}
+    </rdf_schema>
+    """
+       
+    print(f"Using model: {model} sparql")
+    if model == "openai":
+        return _call_openai(system_message, user_query, "sparql")
+    elif model == "mistral":
+        return _call_mistral(system_message, user_query, "sparql")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid model specified.")
 
-def _call_openai(system_message: str, user_query: str) -> str:
+def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
@@ -50,12 +77,16 @@ def _call_openai(system_message: str, user_query: str) -> str:
             ]
         )
         response_content = response.choices[0].message["content"]
-        return extract_sql_query(response_content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calling OpenAI API: {str(e)}")
+        response_json = json.loads(response_content)
+        if query_type == "sql":
+            return extract_sql_query(response_content)
+        elif query_type == "sparql":
+            return response_json.get("sparql_query")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Error parsing the OpenAI response.")
 
 
-def _call_mistral(system_message: str, user_query: str) -> str:
+def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
     try:
         API_URL = os.getenv("API_URL")
         headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
@@ -66,15 +97,22 @@ def _call_mistral(system_message: str, user_query: str) -> str:
         ]
 
         response = requests.post(API_URL, headers=headers, json={"messages": messages})
-        response.raise_for_status()
+        response.raise_for_status() 
 
         response_content = response.json()
         sql_query_response = response_content['choices'][0]['message']['content']
-        
-        return extract_sql_query(sql_query_response)
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Error calling Mistral API: {str(e)}")
+    
+        print("MIRA",sql_query_response)
 
+        query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
+        response_json = json.loads(query_json)
+        
+        if query_type == "sql":
+            return extract_sql_query(sql_query_response)
+        elif query_type == "sparql":
+            return response_json.get("sparql_query")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Error parsing the Mistral response.")
 
 def extract_sql_query(response_content: str) -> str:
     try:

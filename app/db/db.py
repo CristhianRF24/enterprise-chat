@@ -3,12 +3,12 @@ from sqlalchemy import create_engine,text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
+from typing import List, Dict
 import mysql.connector
 from mysql.connector import Error
-from typing import List, Dict
 import json
 
-load_dotenv()  
+load_dotenv() 
 
 URL_DATABASE = os.getenv('DATABASE_URL')
 db_config = {
@@ -31,6 +31,40 @@ def get_db():
     finally:
         db.close()
 
+def execute_sql_query(query: str, db: Session) -> List[Dict]:
+    try:
+       
+        query = query.strip().rstrip(';')
+      
+        if not is_sql_query_safe(query):
+            raise Exception("SQL query is unsafe")
+
+        result = db.execute(text(query))
+        rows = result.fetchall()
+
+        if rows:
+            data = []
+            for row in rows:
+                data.append(dict(zip(result.keys(), row)))
+            return data
+        else:
+            return []
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return []
+    
+    
+def is_sql_query_safe(sql_query):
+    prohibited_phrases = [
+        "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE",
+        "EXEC", "--", "/*", "*/", "@@", "@", "CREATE", "SHUTDOWN",
+        "GRANT", "REVOKE"
+    ]
+    for phrase in prohibited_phrases:
+        if phrase.lower() in sql_query.lower():
+            return False
+    return True
 
 def get_database_schema() -> str:
     connection = None
@@ -76,7 +110,7 @@ def get_database_schema() -> str:
         return database_schema_json
 
     except mysql.connector.Error as e:
-        print("Error")
+        print("Erro")
         return f"Error: {e}"
         
 
@@ -84,39 +118,3 @@ def get_database_schema() -> str:
         if connection.is_connected():
             cursor.close()
             connection.close()
-
-
-def execute_sql_query(query: str, db: Session) -> List[Dict]:
-    try:
-       
-        query = query.strip().rstrip(';')
-      
-        if not is_sql_query_safe(query):
-            raise Exception("SQL query is unsafe")
-
-        result = db.execute(text(query))
-        rows = result.fetchall()
-
-        if rows:
-            data = []
-            for row in rows:
-                data.append(dict(zip(result.keys(), row)))
-            return data
-        else:
-            return []
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return []
-    
-    
-def is_sql_query_safe(sql_query):
-    prohibited_phrases = [
-        "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE",
-        "EXEC", "--", "/*", "*/", "@@", "@", "CREATE", "SHUTDOWN",
-        "GRANT", "REVOKE"
-    ]
-    for phrase in prohibited_phrases:
-        if phrase.lower() in sql_query.lower():
-            return False
-    return True
