@@ -10,6 +10,7 @@ import json
 
 load_dotenv()  
 
+URL_DATABASE = os.getenv('DATABASE_URL')
 db_config = {
     "host": os.getenv('DB_HOST'), 
     "user": os.getenv('DB_USER'),       
@@ -18,7 +19,6 @@ db_config = {
     "port": os.getenv('DB_PORT')        
 }
 
-URL_DATABASE = os.getenv('DATABASE_URL')
 
 engine = create_engine(URL_DATABASE)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -31,16 +31,6 @@ def get_db():
     finally:
         db.close()
 
-def is_sql_query_safe(sql_query):
-    prohibited_phrases = [
-        "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE",
-        "EXEC", "--", ";", "/*", "*/", "@@", "@", "CREATE", "SHUTDOWN",
-        "GRANT", "REVOKE"
-    ]
-    for phrase in prohibited_phrases:
-        if phrase.lower() in sql_query.lower():
-            return False
-    return True
 
 def get_database_schema() -> str:
     connection = None
@@ -86,7 +76,7 @@ def get_database_schema() -> str:
         return database_schema_json
 
     except mysql.connector.Error as e:
-        print("Erro")
+        print("Error")
         return f"Error: {e}"
         
 
