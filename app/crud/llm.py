@@ -3,7 +3,6 @@ import openai
 import requests
 from requests import Session
 from app.api.v1.endpoints.files import get_db_schema
-from app.db.db import get_database_schema
 from dotenv import load_dotenv
 import json
 import re
