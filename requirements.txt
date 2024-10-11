@@ -13,5 +13,4 @@ openai
 requests
 pydantic
 python-dotenv
-pymupdf
 rdflib
