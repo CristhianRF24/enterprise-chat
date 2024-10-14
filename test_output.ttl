@@ -1,0 +1,62 @@
+@prefix data: <http://example.org/data/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix voc: <http://example.org/vocabulary/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+voc:casa a rdfs:Class ;
+    rdfs:label "casa"^^xsd:string .
+
+voc:files a rdfs:Class ;
+    rdfs:label "files"^^xsd:string .
+
+voc:mascota a rdfs:Class ;
+    rdfs:label "mascota"^^xsd:string .
+
+voc:persona a rdfs:Class ;
+    rdfs:label "persona"^^xsd:string .
+
+voc:vector_stores a rdfs:Class ;
+    rdfs:label "vector_stores"^^xsd:string .
+
+data:ciudad a rdf:Property ;
+    rdfs:label "ciudad"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:direccion a rdf:Property ;
+    rdfs:label "direccion"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:edad a rdf:Property ;
+    rdfs:label "edad"^^xsd:string ;
+    rdfs:range "int"^^xsd:string .
+
+data:filename a rdf:Property ;
+    rdfs:label "filename"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:filepath a rdf:Property ;
+    rdfs:label "filepath"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:filetype a rdf:Property ;
+    rdfs:label "filetype"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:id a rdf:Property ;
+    rdfs:label "id"^^xsd:string ;
+    rdfs:range "bigint"^^xsd:string,
+        "int"^^xsd:string .
+
+data:nombre a rdf:Property ;
+    rdfs:label "nombre"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
+data:persona_id a rdf:Property ;
+    rdfs:label "persona_id"^^xsd:string ;
+    rdfs:range "int"^^xsd:string .
+
+data:tipo a rdf:Property ;
+    rdfs:label "tipo"^^xsd:string ;
+    rdfs:range "varchar"^^xsd:string .
+
