@@ -16,9 +16,9 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     system_message = create_system_message(schema)
 
     if model == "openai":
-        return _call_openai(system_message, user_query)
+        return _call_openai(system_message, user_query, "sql")
     elif model == "mistral":
-        return _call_mistral(system_message, user_query)
+        return _call_mistral(system_message, user_query, "sql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
