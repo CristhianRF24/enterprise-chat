@@ -4,6 +4,7 @@ import requests
 from requests import Session
 from app.api.v1.endpoints.files import get_db_schema
 from dotenv import load_dotenv
+from app.rdf_generator import generate_ttl
 import json
 import re
 import os
@@ -16,13 +17,12 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     system_message = create_system_message(schema)
 
     if model == "openai":
-        return _call_openai(system_message, user_query)
+        return _call_openai(system_message, user_query, "sql")
     elif model == "mistral":
-        return _call_mistral(system_message, user_query)
+        return _call_mistral(system_message, user_query, "sql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
-from app.rdf_generator import generate_ttl
 
 def create_system_message(schema: str) -> str:
   
@@ -105,6 +105,7 @@ def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
         print("MIRA",sql_query_response)
 
         query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
+
         response_json = json.loads(query_json)
         
         if query_type == "sql":
