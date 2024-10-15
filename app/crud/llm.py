@@ -16,9 +16,9 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     system_message = create_system_message(schema)
 
     if model == "openai":
-        return _call_openai(system_message, user_query)
+        return _call_openai(system_message, user_query, "sql")
     elif model == "mistral":
-        return _call_mistral(system_message, user_query)
+        return _call_mistral(system_message, user_query, "sql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
@@ -28,7 +28,7 @@ def create_system_message(schema: str) -> str:
   
     return f"""
     Given the following schema, write a SQL query that retrieves the requested information.
-    Return the SQL query inside a JSON structure with the key "sql_query".
+    Return ONLY and STRICTLY the SQL query inside a JSON structure with the key "sql_query".
     <example>
     {{
         "sql_query": "SELECT * FROM files",
@@ -47,7 +47,7 @@ def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
     
     system_message = f"""
     Given the following RDF schema, write a SPARQL query that retrieves the requested information.
-    Return ONLY the SPARQL query inside a JSON structure with the key "sparql_query".
+    Return ONLY and STRICTLY  the JSON structure with the key "sparql_query" as a output avoid any solution description. temperature 0 
     <example>
     {{
         "sparql_query": "SELECT ?s ?p ?o WHERE {{ ?s ?p ?o }}",
@@ -70,7 +70,7 @@ def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
 def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_query}
@@ -106,6 +106,7 @@ def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
 
         query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
         response_json = json.loads(query_json)
+        print(query_json)
         
         if query_type == "sql":
             return extract_sql_query(sql_query_response)

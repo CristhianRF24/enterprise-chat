@@ -12,4 +12,3 @@ def create_file(db: Session, filename: str, filetype: str, filepath: str):
 
 def file_exists(db: Session, filename: str, filepath: str):
     return db.query(File).filter((File.filename == filename) | (File.filepath == filepath)).first()
-
