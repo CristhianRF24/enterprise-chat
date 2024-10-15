@@ -53,12 +53,54 @@ data:filepath a rdf:Property ;
     rdfs:label "filepath"^^xsd:string ;
     rdfs:range "varchar"^^xsd:string .
 
-<http://example.org/data/files/27> a voc:files ;
-    rdfs:label "CV file.pdf"^^xsd:string ;
-    data:filename "CV file.pdf"^^xsd:string ;
-    data:filepath "./uploaded_files/CV file.pdf"^^xsd:string ;
+<http://example.org/data/files/13> a voc:files ;
+    rdfs:label "UNIVERSIDAD MAYOR DE SAN SIMÓN.docx"^^xsd:string ;
+    data:filename "UNIVERSIDAD MAYOR DE SAN SIMÓN.docx"^^xsd:string ;
+    data:filepath "./uploaded_files/UNIVERSIDAD MAYOR DE SAN SIMÓN.docx"^^xsd:string ;
+    data:filetype "application/vnd.openxmlformats-officedocument.word"^^xsd:string ;
+    data:id 1.3e+01 .
+
+<http://example.org/data/files/15> a voc:files ;
+    rdfs:label "flutter-cheat-sheet.pdf"^^xsd:string ;
+    data:filename "flutter-cheat-sheet.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/flutter-cheat-sheet.pdf"^^xsd:string ;
     data:filetype "application/pdf"^^xsd:string ;
-    data:id 2.7e+01 .
+    data:id 1.5e+01 .
+
+<http://example.org/data/files/17> a voc:files ;
+    rdfs:label "2pDina.pdf"^^xsd:string ;
+    data:filename "2pDina.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/2pDina.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 1.7e+01 .
+
+<http://example.org/data/files/18> a voc:files ;
+    rdfs:label "FORMULARIO F1 - 2024  - F.pdf"^^xsd:string ;
+    data:filename "FORMULARIO F1 - 2024  - F.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/FORMULARIO F1 - 2024  - F.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 1.8e+01 .
+
+<http://example.org/data/files/19> a voc:files ;
+    rdfs:label "134111.pdf"^^xsd:string ;
+    data:filename "134111.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/134111.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 1.9e+01 .
+
+<http://example.org/data/files/20> a voc:files ;
+    rdfs:label "article.pdf"^^xsd:string ;
+    data:filename "article.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/article.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 2e+01 .
+
+<http://example.org/data/files/4> a voc:files ;
+    rdfs:label "Prueba_Diagnóstica.pdf"^^xsd:string ;
+    data:filename "Prueba_Diagnóstica.pdf"^^xsd:string ;
+    data:filepath "./uploaded_files/Prueba_Diagnóstica.pdf"^^xsd:string ;
+    data:filetype "application/pdf"^^xsd:string ;
+    data:id 4e+00 .
 
 data:filetype a rdf:Property ;
     rdfs:label "filetype"^^xsd:string ;
@@ -69,16 +111,16 @@ data:id a rdf:Property ;
     rdfs:range "bigint"^^xsd:string,
         "int"^^xsd:string .
 
-<http://example.org/data/mascota/1> a voc:mascota ;
+<http://example.org/data/mascota/2> a voc:mascota ;
     rdfs:label "Firulais"^^xsd:string ;
-    data:id 1e+00 ;
+    data:id 2e+00 ;
     data:nombre "Firulais"^^xsd:string ;
     data:tipo "perro"^^xsd:string ;
     voc:has_persona <http://example.org/data/persona/1> .
 
-<http://example.org/data/mascota/2> a voc:mascota ;
+<http://example.org/data/mascota/3> a voc:mascota ;
     rdfs:label "Michi"^^xsd:string ;
-    data:id 2e+00 ;
+    data:id 3e+00 ;
     data:nombre "Michi"^^xsd:string ;
     data:tipo "gato"^^xsd:string ;
     voc:has_persona <http://example.org/data/persona/2> .
@@ -95,10 +137,10 @@ data:tipo a rdf:Property ;
     rdfs:label "tipo"^^xsd:string ;
     rdfs:range "varchar"^^xsd:string .
 
-<http://example.org/data/vector_stores/2> a voc:vector_stores ;
+<http://example.org/data/vector_stores/1> a voc:vector_stores ;
     rdfs:label "./vector_stores/vector_store.json"^^xsd:string ;
     data:filepath "./vector_stores/vector_store.json"^^xsd:string ;
-    data:id 2e+00 .
+    data:id 1e+00 .
 
 <http://example.org/data/persona/1> a voc:persona ;
     rdfs:label "Juan Perez"^^xsd:string ;
