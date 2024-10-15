@@ -84,3 +84,47 @@ def generate_ttl(output_path="output.ttl"):
 
     knowledge_graph.serialize(destination=output_path, format="turtle")
     return output_path
+
+def generate_schema(output_path="schema_output.ttl"):
+    db_url = os.getenv('DATABASE_URL')
+    engine = sqlalchemy.create_engine(db_url)
+
+    # Inicializar metadata e inspector
+    metadata = MetaData()
+    metadata.reflect(bind=engine)
+    inspector = inspect(engine)
+
+    # Crear el grafo RDF usando la función existente
+    knowledge_graph, data_ns, voc_ns = create_knowledge_graph()
+
+    # Agregar tipo de grafo RDF
+    knowledge_graph.add((voc_ns['DatabaseSchema'], RDF.type, RDFS.Class))
+    knowledge_graph.add((voc_ns['DatabaseSchema'], RDFS.label, Literal("Database Schema", datatype=XSD.string)))
+
+    for table in metadata.tables.keys():
+        table_uri = voc_ns[table]
+        # Añadir cada tabla al grafo
+        knowledge_graph.add((table_uri, RDF.type, RDFS.Class))
+        knowledge_graph.add((table_uri, RDFS.label, Literal(table, datatype=XSD.string)))
+
+        # Obtener claves foráneas
+        foreign_keys = inspector.get_foreign_keys(table)
+
+        for column in metadata.tables[table].columns:
+            column_uri = voc_ns[f"{table}/{column.name}"]
+            # Añadir cada columna al grafo
+            knowledge_graph.add((column_uri, RDF.type, RDF.Property))
+            knowledge_graph.add((column_uri, RDFS.label, Literal(column.name, datatype=XSD.string)))
+
+            # Agregar el rango de cada columna
+            knowledge_graph.add((column_uri, RDFS.range, Literal(str(column.type), datatype=XSD.string)))
+
+            # Agregar relaciones si la columna es una clave foránea
+            if column.name in [fk['constrained_columns'][0] for fk in foreign_keys]:
+                ref_table = next(fk['referred_table'] for fk in foreign_keys if fk['constrained_columns'][0] == column.name)
+                ref_table_uri = voc_ns[ref_table]
+                knowledge_graph.add((table_uri, voc_ns[f"has_{ref_table}"], ref_table_uri))
+
+    # Serializar el grafo RDF a un archivo
+    knowledge_graph.serialize(destination=output_path, format="turtle")
+    return output_path

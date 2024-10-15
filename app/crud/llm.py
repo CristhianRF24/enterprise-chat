@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import json
 import re
 import os
+from app.rdf_generator import generate_schema, generate_ttl
 
 load_dotenv()
 
@@ -21,8 +22,6 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
         return _call_mistral(system_message, user_query, "sql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
-
-from app.rdf_generator import generate_ttl
 
 def create_system_message(schema: str) -> str:
   
@@ -41,13 +40,13 @@ def create_system_message(schema: str) -> str:
     """
 
 def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
-    generate_ttl()
-    with open("output.ttl", 'r') as f:
+    generate_schema()
+    with open("schema_output.ttl", 'r') as f:
         rdf_content = f.read()
     
     system_message = f"""
     Given the following RDF schema, write a SPARQL query that retrieves the requested information.
-    Return ONLY and STRICTLY  the JSON structure with the key "sparql_query" as a output avoid any solution description. temperature 0 
+    Return ONLY and STRICTLY the JSON structure with the key "sparql_query" as a output avoid any solution description. temperature 0 
     <example>
     {{
         "sparql_query": "SELECT ?s ?p ?o WHERE {{ ?s ?p ?o }}",
