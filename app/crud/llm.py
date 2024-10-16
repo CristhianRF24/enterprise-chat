@@ -41,12 +41,12 @@ def create_system_message(schema: str) -> str:
 
 def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
     generate_schema()
-    with open("schema_output.ttl", 'r') as f:
+    with open("schema.ttl", 'r') as f:
         rdf_content = f.read()
     
     system_message = f"""
     Given the following RDF schema, write a SPARQL query that retrieves the requested information.
-    Return ONLY and STRICTLY the JSON structure with the key "sparql_query" as a output avoid any solution description. temperature 0 
+    Return ONLY and STRICTLY the JSON structure with the key "sparql_query" as a output. AVOID any solution description. temperature 0 
     <example>
     {{
         "sparql_query": "SELECT ?s ?p ?o WHERE {{ ?s ?p ?o }}",

@@ -85,46 +85,28 @@ def generate_ttl(output_path="output.ttl"):
     knowledge_graph.serialize(destination=output_path, format="turtle")
     return output_path
 
-def generate_schema(output_path="schema_output.ttl"):
-    db_url = os.getenv('DATABASE_URL')
-    engine = sqlalchemy.create_engine(db_url)
+def generate_schema():
+    g = Graph()
+    EX = Namespace("http://example.org/")
+    schema_dict = json.loads(get_database_schema())
+    
+    for table_name, table_info in schema_dict.items():
+        table_uri = URIRef(EX[table_name])
 
-    # Inicializar metadata e inspector
-    metadata = MetaData()
-    metadata.reflect(bind=engine)
-    inspector = inspect(engine)
+        for column in table_info['columns']:
+            column_name = column['COLUMN_NAME']
+            data_type = column['DATA_TYPE']
+            is_nullable = column['IS_NULLABLE']
 
-    # Crear el grafo RDF usando la función existente
-    knowledge_graph, data_ns, voc_ns = create_knowledge_graph()
+            column_uri = URIRef(EX[f"{table_name}/{column_name}"])
 
-    # Agregar tipo de grafo RDF
-    knowledge_graph.add((voc_ns['DatabaseSchema'], RDF.type, RDFS.Class))
-    knowledge_graph.add((voc_ns['DatabaseSchema'], RDFS.label, Literal("Database Schema", datatype=XSD.string)))
+            g.add((table_uri, EX.hasColumn, column_uri))
+            g.add((column_uri, EX.name, Literal(column_name)))
+            g.add((column_uri, EX.dataType, Literal(data_type)))
+            g.add((column_uri, EX.isNullable, Literal(is_nullable)))
 
-    for table in metadata.tables.keys():
-        table_uri = voc_ns[table]
-        # Añadir cada tabla al grafo
-        knowledge_graph.add((table_uri, RDF.type, RDFS.Class))
-        knowledge_graph.add((table_uri, RDFS.label, Literal(table, datatype=XSD.string)))
+        for primary_key in table_info['primary_keys']:
+            pk_uri = URIRef(EX[f"{table_name}/{primary_key}"])
+            g.add((table_uri, EX.primaryKey, pk_uri))
 
-        # Obtener claves foráneas
-        foreign_keys = inspector.get_foreign_keys(table)
-
-        for column in metadata.tables[table].columns:
-            column_uri = voc_ns[f"{table}/{column.name}"]
-            # Añadir cada columna al grafo
-            knowledge_graph.add((column_uri, RDF.type, RDF.Property))
-            knowledge_graph.add((column_uri, RDFS.label, Literal(column.name, datatype=XSD.string)))
-
-            # Agregar el rango de cada columna
-            knowledge_graph.add((column_uri, RDFS.range, Literal(str(column.type), datatype=XSD.string)))
-
-            # Agregar relaciones si la columna es una clave foránea
-            if column.name in [fk['constrained_columns'][0] for fk in foreign_keys]:
-                ref_table = next(fk['referred_table'] for fk in foreign_keys if fk['constrained_columns'][0] == column.name)
-                ref_table_uri = voc_ns[ref_table]
-                knowledge_graph.add((table_uri, voc_ns[f"has_{ref_table}"], ref_table_uri))
-
-    # Serializar el grafo RDF a un archivo
-    knowledge_graph.serialize(destination=output_path, format="turtle")
-    return output_path
+    g.serialize(destination='schema.ttl', format='turtle')

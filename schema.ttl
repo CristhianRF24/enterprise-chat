@@ -1,0 +1,97 @@
+@prefix ns1: <http://example.org/> .
+
+ns1:casa ns1:hasColumn <http://example.org/casa/ciudad>,
+        <http://example.org/casa/direccion>,
+        <http://example.org/casa/id>,
+        <http://example.org/casa/persona_id> ;
+    ns1:primaryKey <http://example.org/casa/id> .
+
+ns1:files ns1:hasColumn <http://example.org/files/filename>,
+        <http://example.org/files/filepath>,
+        <http://example.org/files/filetype>,
+        <http://example.org/files/id> ;
+    ns1:primaryKey <http://example.org/files/id> .
+
+ns1:mascota ns1:hasColumn <http://example.org/mascota/id>,
+        <http://example.org/mascota/nombre>,
+        <http://example.org/mascota/persona_id>,
+        <http://example.org/mascota/tipo> ;
+    ns1:primaryKey <http://example.org/mascota/id> .
+
+ns1:persona ns1:hasColumn <http://example.org/persona/edad>,
+        <http://example.org/persona/id>,
+        <http://example.org/persona/nombre> ;
+    ns1:primaryKey <http://example.org/persona/id> .
+
+ns1:vector_stores ns1:hasColumn <http://example.org/vector_stores/filepath>,
+        <http://example.org/vector_stores/id> ;
+    ns1:primaryKey <http://example.org/vector_stores/id> .
+
+<http://example.org/casa/ciudad> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "ciudad" .
+
+<http://example.org/casa/direccion> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "direccion" .
+
+<http://example.org/casa/persona_id> ns1:dataType "int" ;
+    ns1:isNullable "YES" ;
+    ns1:name "persona_id" .
+
+<http://example.org/files/filename> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "filename" .
+
+<http://example.org/files/filepath> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "filepath" .
+
+<http://example.org/files/filetype> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "filetype" .
+
+<http://example.org/mascota/nombre> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "nombre" .
+
+<http://example.org/mascota/persona_id> ns1:dataType "int" ;
+    ns1:isNullable "YES" ;
+    ns1:name "persona_id" .
+
+<http://example.org/mascota/tipo> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "tipo" .
+
+<http://example.org/persona/edad> ns1:dataType "int" ;
+    ns1:isNullable "NO" ;
+    ns1:name "edad" .
+
+<http://example.org/persona/nombre> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "nombre" .
+
+<http://example.org/vector_stores/filepath> ns1:dataType "varchar" ;
+    ns1:isNullable "NO" ;
+    ns1:name "filepath" .
+
+<http://example.org/casa/id> ns1:dataType "int" ;
+    ns1:isNullable "NO" ;
+    ns1:name "id" .
+
+<http://example.org/files/id> ns1:dataType "int" ;
+    ns1:isNullable "NO" ;
+    ns1:name "id" .
+
+<http://example.org/mascota/id> ns1:dataType "int" ;
+    ns1:isNullable "NO" ;
+    ns1:name "id" .
+
+<http://example.org/persona/id> ns1:dataType "int" ;
+    ns1:isNullable "NO" ;
+    ns1:name "id" .
+
+<http://example.org/vector_stores/id> ns1:dataType "bigint" ;
+    ns1:isNullable "NO" ;
+    ns1:name "id" .
+
