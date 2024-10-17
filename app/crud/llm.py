@@ -4,25 +4,47 @@ import requests
 from requests import Session
 from app.api.v1.endpoints.files import get_db_schema
 from dotenv import load_dotenv
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from app.rdf_generator import generate_ttl
 import json
+import torch
 import re
 import os
 
 load_dotenv()
+huggingface_token = os.getenv('HUGGINGFACE_TOKEN')
+
+headers = {
+    "Authorization": f"Bearer {huggingface_token}"
+}
+
+
+try:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tokenizer = AutoTokenizer.from_pretrained("chatdb/natural-sql-7b", use_auth_token=huggingface_token,  cache_dir="E:/huggingface/models")
+    model = AutoModelForCausalLM.from_pretrained(
+        "chatdb/natural-sql-7b",
+        device_map="auto",
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        use_auth_token=huggingface_token
+    )
+except Exception as e:
+    print(f"Error al cargar el modelo: {e}")
+    raise HTTPException(status_code=500, detail=f"Error al cargar el modelo de Hugging Face: {str(e)}")
+
 
 def generate_sql_query(user_query: str, db: Session, model: str) -> str:
+    
     schema = get_db_schema(db)
-
     system_message = create_system_message(schema)
 
     if model == "openai":
         return _call_openai(system_message, user_query, "sql")
-    elif model == "mistral":
+    elif model == "natural-sql":
         return _call_mistral(system_message, user_query, "sql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
-from app.rdf_generator import generate_ttl
 
 def create_system_message(schema: str) -> str:
   
@@ -62,7 +84,7 @@ def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
     print(f"Using model: {model} sparql")
     if model == "openai":
         return _call_openai(system_message, user_query, "sparql")
-    elif model == "mistral":
+    elif model == "natural-sql":
         return _call_mistral(system_message, user_query, "sparql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
@@ -88,32 +110,22 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
 
 def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
     try:
-        API_URL = os.getenv("API_URL")
-        headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
-        
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_query}
-        ]
-
-        response = requests.post(API_URL, headers=headers, json={"messages": messages})
-        response.raise_for_status() 
-
-        response_content = response.json()
-        sql_query_response = response_content['choices'][0]['message']['content']
-    
-        print("MIRA",sql_query_response)
-
-        query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
+       
+        full_prompt = f"{system_message}\nUser: {user_query}"
+        inputs = tokenizer(full_prompt, return_tensors="pt")
+        outputs = model.generate(**inputs, max_length=1024, temperature=0.7, do_sample=True)
+        response_content = tokenizer.decode(outputs[0], skip_special_tokens=True)    
+           
+        query_json = re.sub(r'```json\n|\n```', '', response_content).strip()
         response_json = json.loads(query_json)
-        print(query_json)
-        
+
         if query_type == "sql":
-            return extract_sql_query(sql_query_response)
+            return extract_sql_query(response_content)
         elif query_type == "sparql":
             return response_json.get("sparql_query")
     except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Error parsing the Mistral response.")
+        raise HTTPException(status_code=500, detail="Error parsing the model response.")
+
 
 def extract_sql_query(response_content: str) -> str:
     try:
