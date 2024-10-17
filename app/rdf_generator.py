@@ -84,3 +84,29 @@ def generate_ttl(output_path="output.ttl"):
 
     knowledge_graph.serialize(destination=output_path, format="turtle")
     return output_path
+
+def generate_schema():
+    g = Graph()
+    EX = Namespace("http://example.org/")
+    schema_dict = json.loads(get_database_schema())
+    
+    for table_name, table_info in schema_dict.items():
+        table_uri = URIRef(EX[table_name])
+
+        for column in table_info['columns']:
+            column_name = column['COLUMN_NAME']
+            data_type = column['DATA_TYPE']
+            is_nullable = column['IS_NULLABLE']
+
+            column_uri = URIRef(EX[f"{table_name}/{column_name}"])
+
+            g.add((table_uri, EX.hasColumn, column_uri))
+            g.add((column_uri, EX.name, Literal(column_name)))
+            g.add((column_uri, EX.dataType, Literal(data_type)))
+            g.add((column_uri, EX.isNullable, Literal(is_nullable)))
+
+        for primary_key in table_info['primary_keys']:
+            pk_uri = URIRef(EX[f"{table_name}/{primary_key}"])
+            g.add((table_uri, EX.primaryKey, pk_uri))
+
+    g.serialize(destination='schema.ttl', format='turtle')
