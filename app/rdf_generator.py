@@ -84,3 +84,25 @@ def generate_ttl(output_path="output.ttl"):
 
     knowledge_graph.serialize(destination=output_path, format="turtle")
     return output_path
+
+def generate_schema():
+    schema_description = []
+    schema_dict = json.loads(get_database_schema())
+    for table_name, table_info in schema_dict.items():
+        description = f"Table '{table_name}' contains the following columns:\n"
+        
+        for column in table_info['columns']:
+            column_name = column['COLUMN_NAME']
+            data_type = column['DATA_TYPE']
+            is_nullable = column['IS_NULLABLE']
+            is_primary = "Primary key" if column_name in table_info.get('primary_keys', []) else "Not a primary key"
+            
+            column_description = (
+                f"- Column '{column_name}' is of type '{data_type}', "
+                f"nullable: {is_nullable}. {is_primary}."
+            )
+            description += column_description + "\n"
+
+        schema_description.append(description)
+
+    return "\n".join(schema_description)
