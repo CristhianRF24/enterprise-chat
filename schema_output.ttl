@@ -1,0 +1,93 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix voc: <http://example.org/vocabulary/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+voc:DatabaseSchema a rdfs:Class ;
+    rdfs:label "Database Schema"^^xsd:string .
+
+voc:casa a rdfs:Class ;
+    rdfs:label "casa"^^xsd:string ;
+    voc:has_persona voc:persona .
+
+voc:files a rdfs:Class ;
+    rdfs:label "files"^^xsd:string .
+
+voc:mascota a rdfs:Class ;
+    rdfs:label "mascota"^^xsd:string ;
+    voc:has_persona voc:persona .
+
+voc:persona a rdfs:Class ;
+    rdfs:label "persona"^^xsd:string .
+
+voc:vector_stores a rdfs:Class ;
+    rdfs:label "vector_stores"^^xsd:string .
+
+<http://example.org/vocabulary/casa/ciudad> a rdf:Property ;
+    rdfs:label "ciudad"^^xsd:string ;
+    rdfs:range "VARCHAR(100)"^^xsd:string .
+
+<http://example.org/vocabulary/casa/direccion> a rdf:Property ;
+    rdfs:label "direccion"^^xsd:string ;
+    rdfs:range "VARCHAR(255)"^^xsd:string .
+
+<http://example.org/vocabulary/casa/id> a rdf:Property ;
+    rdfs:label "id"^^xsd:string ;
+    rdfs:range "INTEGER"^^xsd:string .
+
+<http://example.org/vocabulary/casa/persona_id> a rdf:Property ;
+    rdfs:label "persona_id"^^xsd:string ;
+    rdfs:range "INTEGER"^^xsd:string .
+
+<http://example.org/vocabulary/files/filename> a rdf:Property ;
+    rdfs:label "filename"^^xsd:string ;
+    rdfs:range "VARCHAR(255)"^^xsd:string .
+
+<http://example.org/vocabulary/files/filepath> a rdf:Property ;
+    rdfs:label "filepath"^^xsd:string ;
+    rdfs:range "VARCHAR(255)"^^xsd:string .
+
+<http://example.org/vocabulary/files/filetype> a rdf:Property ;
+    rdfs:label "filetype"^^xsd:string ;
+    rdfs:range "VARCHAR(50)"^^xsd:string .
+
+<http://example.org/vocabulary/files/id> a rdf:Property ;
+    rdfs:label "id"^^xsd:string ;
+    rdfs:range "INTEGER"^^xsd:string .
+
+<http://example.org/vocabulary/mascota/id> a rdf:Property ;
+    rdfs:label "id"^^xsd:string ;
+    rdfs:range "INTEGER"^^xsd:string .
+
+<http://example.org/vocabulary/mascota/nombre> a rdf:Property ;
+    rdfs:label "nombre"^^xsd:string ;
+    rdfs:range "VARCHAR(100)"^^xsd:string .
+
+<http://example.org/vocabulary/mascota/persona_id> a rdf:Property ;
+    rdfs:label "persona_id"^^xsd:string ;
+    rdfs:range "INTEGER"^^xsd:string .
+
+<http://example.org/vocabulary/mascota/tipo> a rdf:Property ;
+    rdfs:label "tipo"^^xsd:string ;
+    rdfs:range "VARCHAR(50)"^^xsd:string .
+
+<http://example.org/vocabulary/persona/edad> a rdf:Property ;
+    rdfs:label "edad"^^xsd:string ;
+    rdfs:range "INTEGER"^^xsd:string .
+
+<http://example.org/vocabulary/persona/id> a rdf:Property ;
+    rdfs:label "id"^^xsd:string ;
+    rdfs:range "INTEGER"^^xsd:string .
+
+<http://example.org/vocabulary/persona/nombre> a rdf:Property ;
+    rdfs:label "nombre"^^xsd:string ;
+    rdfs:range "VARCHAR(100)"^^xsd:string .
+
+<http://example.org/vocabulary/vector_stores/filepath> a rdf:Property ;
+    rdfs:label "filepath"^^xsd:string ;
+    rdfs:range "VARCHAR(255)"^^xsd:string .
+
+<http://example.org/vocabulary/vector_stores/id> a rdf:Property ;
+    rdfs:label "id"^^xsd:string ;
+    rdfs:range "BIGINT"^^xsd:string .
+

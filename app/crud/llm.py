@@ -40,9 +40,8 @@ def create_system_message(schema: str) -> str:
     """
 
 def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
-    generate_schema()
-    with open("schema.ttl", 'r') as f:
-        rdf_content = f.read()
+    rdf_content = generate_schema()
+    print(rdf_content)
     
     system_message = f"""
     Given the following RDF schema, write a SPARQL query that retrieves the requested information.

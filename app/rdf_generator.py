@@ -86,27 +86,23 @@ def generate_ttl(output_path="output.ttl"):
     return output_path
 
 def generate_schema():
-    g = Graph()
-    EX = Namespace("http://example.org/")
+    schema_description = []
     schema_dict = json.loads(get_database_schema())
-    
     for table_name, table_info in schema_dict.items():
-        table_uri = URIRef(EX[table_name])
-
+        description = f"Table '{table_name}' contains the following columns:\n"
+        
         for column in table_info['columns']:
             column_name = column['COLUMN_NAME']
             data_type = column['DATA_TYPE']
             is_nullable = column['IS_NULLABLE']
+            is_primary = "Primary key" if column_name in table_info.get('primary_keys', []) else "Not a primary key"
+            
+            column_description = (
+                f"- Column '{column_name}' is of type '{data_type}', "
+                f"nullable: {is_nullable}. {is_primary}."
+            )
+            description += column_description + "\n"
 
-            column_uri = URIRef(EX[f"{table_name}/{column_name}"])
+        schema_description.append(description)
 
-            g.add((table_uri, EX.hasColumn, column_uri))
-            g.add((column_uri, EX.name, Literal(column_name)))
-            g.add((column_uri, EX.dataType, Literal(data_type)))
-            g.add((column_uri, EX.isNullable, Literal(is_nullable)))
-
-        for primary_key in table_info['primary_keys']:
-            pk_uri = URIRef(EX[f"{table_name}/{primary_key}"])
-            g.add((table_uri, EX.primaryKey, pk_uri))
-
-    g.serialize(destination='schema.ttl', format='turtle')
+    return "\n".join(schema_description)
