@@ -15,7 +15,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: mysql+mysqlconnector://root:root@db:3306/enterprise_chat
+      DATABASE_URL: mysql+mysqlconnector://root:cris123@localhost:3306/centrolmovil
     ports:
       - "8000:8000"
     volumes:
