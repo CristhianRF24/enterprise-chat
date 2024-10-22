@@ -6,7 +6,6 @@ mysql-connector-python
 spacy
 langchain>=0.2.12,<0.3.0
 sentence_transformers
-pypdf
 openai
 requests
 pydantic

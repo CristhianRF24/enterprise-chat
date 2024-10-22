@@ -4,11 +4,13 @@ import requests
 from requests import Session
 from app.api.v1.endpoints.files import get_db_schema
 from dotenv import load_dotenv
-from app.rdf_generator import generate_ttl
+from app.rdf_generator import generate_schema, generate_ttl
 import json
 import re
 import os
 import sqlparse
+
+
 load_dotenv()
 
 """
@@ -47,9 +49,6 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
-    
-
-
 
 def create_system_message(schema: str) -> str:
     return f"""
@@ -67,14 +66,13 @@ def create_system_message(schema: str) -> str:
 
 
 def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
-    generate_ttl()
-    with open("output.ttl", 'r') as f:
-        rdf_content = f.read()
+    rdf_content = generate_schema()
+    print(rdf_content)
     
     system_message = f"""
     Given the following RDF schema, write a SPARQL query that retrieves the requested information.
     Return ONLY and STRICTLY the JSON structure with the key "sparql_query" as output, avoiding any solution description.
-    <example>
+
     {{
         "sparql_query": "SELECT ?s ?p ?o WHERE {{ ?s ?p ?o }}",
         "original_query": "Get all triples from the dataset"
