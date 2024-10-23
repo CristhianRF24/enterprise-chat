@@ -38,7 +38,6 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     
     # Extract the relevant subschema based on the user query
     relevant_schema = extract_relevant_schema(user_query, full_schema)
-    print("Relevant Database Schema:", relevant_schema)
     
     system_message = create_system_message(relevant_schema)
 
