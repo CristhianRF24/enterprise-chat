@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+pandas
 sqlalchemy
 python-multipart
 mysql-connector-python
@@ -12,3 +13,6 @@ pydantic
 python-dotenv
 rdflib
 sqlparse
+streamlit
+streamlit-toggle-switch
+numpy==1.21.0
