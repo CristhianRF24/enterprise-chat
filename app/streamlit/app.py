@@ -57,7 +57,7 @@ for chat in st.session_state.history:
 def send_message():
     user_input = st.session_state.input
     if user_input:
-        model_name = "OpenAI" if st.session_state.model else "mistral"
+        model_name = "openai" if st.session_state.model else "mistral"
         endpoint = "http://127.0.0.1:8000/generate_sparql/" if st.session_state.use_knowledge_graph else "http://127.0.0.1:8000/generate_sql/"
         payload = {
             "user_query": user_input,
