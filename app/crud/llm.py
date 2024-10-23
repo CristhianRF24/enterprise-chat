@@ -52,17 +52,20 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
 
 def create_system_message(schema: str) -> str:
     return f"""
-     Given the following schema, write ONLY the SQL query that retrieves the requested information.
+    Given the following schema, write ONLY the SQL query that retrieves the requested information.
+    The schema is in English, but the user's query may be in Spanish.
+    Translate table and column names from Spanish to English where necessary.
     Return the SQL query in this JSON format:
     {{
         "sql_query": "SELECT * FROM city;",
-        "original_query": "Show me all the city"
+        "original_query": "Show me all the cities"
     }}
     You must STRICTLY follow this format and return ONLY the JSON. Do not provide explanations or additional information.
     <schema>
     {schema}
     </schema>
     """
+
 
 
 def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
@@ -133,13 +136,10 @@ def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
         response_content = response.json()
         sql_query_response = response_content['choices'][0]['message']['content']
     
-        print("MIRA", sql_query_response)
-
         query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
         response_json = json.loads(query_json)
         
-        print("query_json:", query_json)
-        print("response_json:", response_json)
+       
         
         if query_type == "sql":
             return extract_sql_query(sql_query_response)
