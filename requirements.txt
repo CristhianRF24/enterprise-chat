@@ -11,3 +11,5 @@ requests
 pydantic
 python-dotenv
 rdflib
+streamlit
+streamlit-toggle-switch
