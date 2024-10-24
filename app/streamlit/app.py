@@ -1,6 +1,12 @@
 import streamlit as st
 import requests
+import os
 from streamlit_toggle import st_toggle_switch
+from dotenv import load_dotenv
+load_dotenv()
+
+sparql_endpoint = os.getenv("SPARQL_ENDPOINT")
+sql_endpoint = os.getenv("SQL_ENDPOINT")
 
 st.markdown("<h1 style='text-align: center;'>Chat with the Database</h1>", unsafe_allow_html=True)
 
@@ -58,7 +64,7 @@ def send_message():
     user_input = st.session_state.input
     if user_input:
         model_name = "openai" if st.session_state.model else "mistral"
-        endpoint = "http://127.0.0.1:8000/generate_sparql/" if st.session_state.use_knowledge_graph else "http://127.0.0.1:8000/generate_sql/"
+        endpoint = sparql_endpoint if st.session_state.use_knowledge_graph else sql_endpoint        
         payload = {
             "user_query": user_input,
             "model": model_name
