@@ -12,7 +12,7 @@ requests
 pydantic
 python-dotenv
 rdflib
-sqlparse
 streamlit
 streamlit-toggle-switch
-numpy==1.21.0
+sqlparse
+
