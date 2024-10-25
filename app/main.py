@@ -36,7 +36,7 @@ async def generate_sql(request: SQLQueryRequest, db: Session = Depends(get_db)):
     if not is_sql_query_safe(sql_query):
         raise HTTPException(status_code=400, detail="Generated SQL query is unsafe.")
     results = execute_sql_query(sql_query, db)
-  
+    
     return SQLQueryResponse(results=results)
     
 def load_graph():

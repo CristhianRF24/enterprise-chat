@@ -74,11 +74,15 @@ def send_message():
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data.get("results"), list) and len(data["results"]) > 0:
-                    results = ', '.join([list(item.values())[0] for item in data["results"]])
+                      results = ', '.join([
+            ', '.join([f"{key}: {value}" for key, value in item.items()]) 
+            for item in data["results"]
+        ])  
                 else:
                     results = "No results found."
             else:
-                results = f"Error: {response.text}"
+                    results = f"Error: {response.text}"
+
         except Exception as e:
             results = f"Error: {str(e)}"
 
