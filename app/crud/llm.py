@@ -90,6 +90,52 @@ def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
         return _call_mistral(system_message, user_query, "sparql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
+    
+
+# Function to generate a readable response
+def generate_human_readable_response(sql_results: list, user_query: str, model: str) -> str:
+    results_text = "\n".join([", ".join([f"{key}: {value}" for key, value in row.items()]) for row in sql_results])
+    system_message = f"""
+    Convert the following SQL results into a user-friendly summary:
+    {results_text}
+    provide ONLY AND STRICTLY a clear and concise description.
+    """
+    
+
+    if model == "openai":
+        return _call_openai_for_response(system_message)
+    elif model == "mistral":
+        return _call_mistral_for_response(system_message)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid model specified.")
+
+# Support function to generate readable response with OpenAI
+def _call_openai_for_response(system_message: str) -> str:
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": system_message}]
+        )
+        return response.choices[0].message["content"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error generating human-readable response.")
+
+#Support function to generate readable response with Mistral
+def _call_mistral_for_response(system_message: str) -> str:
+    try:
+        API_URL = os.getenv("API_URL")
+        headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
+        
+        response = requests.post(API_URL, headers=headers, json={"messages": [{"role": "user", "content": system_message}]})
+        response.raise_for_status()
+        response_content = response.json()
+        return response_content['choices'][0]['message']['content']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error generating human-readable response.")
+    
+    
+    
+    
 
 def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
     try:

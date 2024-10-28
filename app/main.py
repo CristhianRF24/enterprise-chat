@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from requests import Session
 from app.api.v1.endpoints import files
-from app.crud.llm import generate_sparql_query, generate_sql_query
+from app.crud.llm import generate_human_readable_response, generate_sparql_query, generate_sql_query
 from app.db.db import execute_sql_query, get_db, is_sql_query_safe
 from rdflib import Graph
 
@@ -12,7 +12,7 @@ class SQLQueryRequest(BaseModel):
     user_query: str
     model: str
 class SQLQueryResponse(BaseModel): 
-    results: list
+    results: str
     
 class QueryRequest(BaseModel):
     user_query: str
@@ -37,7 +37,12 @@ async def generate_sql(request: SQLQueryRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Generated SQL query is unsafe.")
     results = execute_sql_query(sql_query, db)
     
-    return SQLQueryResponse(results=results)
+    print('results', results)
+    
+    human_readable_response = generate_human_readable_response(results, request.user_query, request.model)
+    
+   
+    return SQLQueryResponse(results=human_readable_response)
     
 def load_graph():
     knowledge_graph = Graph()

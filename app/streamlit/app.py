@@ -73,13 +73,12 @@ def send_message():
             response = requests.post(endpoint, json=payload)
             if response.status_code == 200:
                 data = response.json()
-                if isinstance(data.get("results"), list) and len(data["results"]) > 0:
-                      results = ', '.join([
-            ', '.join([f"{key}: {value}" for key, value in item.items()]) 
-            for item in data["results"]
-        ])  
+                  # Check if `results` is a string (the way it arrives)
+                if "results" in data and isinstance(data["results"], str):
+                    results = data["results"]
                 else:
-                    results = "No results found."
+                
+                    results = "No results found "
             else:
                     results = f"Error: {response.text}"
 
