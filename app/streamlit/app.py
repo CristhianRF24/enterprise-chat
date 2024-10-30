@@ -106,6 +106,7 @@ user_input = st.text_input("", key="input", on_change=send_message, placeholder=
 col1, col2 = st.columns([1, 2])
 
 with col1:
+    st.markdown("<p style='text-align: left; font-weight: bold;'>Default: SQL Database</p>", unsafe_allow_html=True)
     kg_switch = st_toggle_switch(
         label="Knowledge Graph",  
         key="knowledge_graph_toggle",
@@ -119,6 +120,7 @@ with col1:
         toggle_knowledge_graph(kg_switch)
 
 with col2:
+    st.markdown("<p style='text-align: right; font-weight: bold;'>Default: Mistral</p>", unsafe_allow_html=True)
     model_switch = st_toggle_switch(
         label="OpenAI",  
         key="toggle",

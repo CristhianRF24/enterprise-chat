@@ -72,6 +72,10 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
 def create_system_message(schema: str) -> str:
     return f"""
     Given the following schema, write ONLY the SQL query that retrieves the requested information.
+    1. If the user query is in Spanish, first translate it to English.
+    2. Based on the translated or original query, generate the SQL query that retrieves the requested information.
+    3. Validate the generated SQL to ensure it is safe and syntactically correct before returning it.
+    
     Return the SQL query in this JSON format:
     {{
         "sql_query": "SELECT * FROM city;",
