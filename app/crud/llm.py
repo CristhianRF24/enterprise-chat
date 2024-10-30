@@ -5,6 +5,7 @@ from requests import Session
 from app.api.v1.endpoints.files import get_db_schema
 from dotenv import load_dotenv
 from app.rdf_generator import generate_schema, generate_ttl
+from sqlparse.sql import IdentifierList, Identifier
 import json
 import re
 import os
@@ -18,24 +19,42 @@ This function looks up table and column names in the user's query
 and extracts the relevant subschema for those tables.
 """
 def extract_relevant_schema(user_query: str, schema: dict) -> str:
-    
+    # Get the contents of the schema
+    schema_content = schema.get('schema', {})
+    print("Schema Content:", schema_content)  
+
+   # Analyze the SQL query
     parsed_query = sqlparse.parse(user_query)[0]
     tokens = [token for token in parsed_query.tokens if not token.is_whitespace]
-    
+    print("Parsed Tokens:", tokens) 
+
     relevant_tables = set()
-    for token in tokens:
-        if token.ttype is None and str(token) in schema:
-            relevant_tables.add(str(token))
-    
-   # Create a subschema with only the relevant tables and columns
-    sub_schema = {table: schema[table] for table in relevant_tables if table in schema}
+
+    # Find relevant tables in the schema   
+    for table_name in schema_content.keys():
+        for token in tokens:
+            # Compares the table name, ignoring case
+            if str(token).lower() == table_name.lower():
+                relevant_tables.add(table_name)
+            # Also checks if the token is a substring of the table name
+            elif table_name.lower() in str(token).lower():
+                relevant_tables.add(table_name)
+
+    print("Relevant Tables Found:", relevant_tables) 
+    # Create a subschema with only the relevant tables and columns
+    sub_schema = {table: schema_content[table] for table in relevant_tables if table in schema_content}
     
     return json.dumps(sub_schema, indent=4)
+
+
+
+
 
 def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     
     full_schema = get_db_schema(db)
-    
+    print("Full Database Schema:", full_schema)
+    print("Schema keys:", full_schema.keys())
     # Extract the relevant subschema based on the user query
     relevant_schema = extract_relevant_schema(user_query, full_schema)
     print("Relevant Database Schema:", relevant_schema)
@@ -52,7 +71,7 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
 
 def create_system_message(schema: str) -> str:
     return f"""
-     Given the following schema, write ONLY the SQL query that retrieves the requested information.
+    Given the following schema, write ONLY the SQL query that retrieves the requested information.
     Return the SQL query in this JSON format:
     {{
         "sql_query": "SELECT * FROM city;",
@@ -94,12 +113,15 @@ def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
 
 # Function to generate a readable response
 def generate_human_readable_response(sql_results: list, user_query: str, model: str) -> str:
+    
     results_text = "\n".join([", ".join([f"{key}: {value}" for key, value in row.items()]) for row in sql_results])
+    
     system_message = f"""
     Convert the following SQL results into a user-friendly summary:
     {results_text}
-    provide ONLY AND STRICTLY a clear and concise description.
+    provide ONLY AND STRICTLY a clear and concise description in spanish.
     """
+
     
 
     if model == "openai":
@@ -163,6 +185,7 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
             return response_json.get("sparql_query")
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Error parsing the OpenAI response.")
+    
 
 def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
     try:

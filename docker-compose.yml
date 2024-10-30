@@ -1,37 +1,11 @@
 version: '3'
 services:
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: enterprise_chat
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-
   app:
     build: .
-    depends_on:
-      - db
     environment:
-      DATABASE_URL: mysql+mysqlconnector://root:cris123@localhost:3306/centrolmovil
+      DATABASE_URL: mysql+mysqlconnector://root:cris123@host.docker.internal:3306/centrolmovil
     ports:
       - "8000:8000"
     volumes:
       - .:/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    environment:
-      PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "8080:80"
-    depends_on:
-      - db
-
-volumes:
-  mysql_data:
