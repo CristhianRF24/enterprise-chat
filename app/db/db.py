@@ -58,7 +58,7 @@ def execute_sql_query(query: str, db: Session) -> List[Dict]:
 def is_sql_query_safe(sql_query):
     prohibited_phrases = [
         "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE",
-        "EXEC", "--", "/*", "*/", "@@", "@", "CREATE", "SHUTDOWN",
+        "EXEC", "--", "/*", "*/", "@@", "@", "SHUTDOWN",
         "GRANT", "REVOKE"
     ]
     for phrase in prohibited_phrases:

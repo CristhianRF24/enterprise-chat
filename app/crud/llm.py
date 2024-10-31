@@ -9,62 +9,123 @@ from sqlparse.sql import IdentifierList, Identifier
 import json
 import re
 import os
+import nltk
 import sqlparse
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
 
 
 load_dotenv()
 
-"""
-This function looks up table and column names in the user's query
-and extracts the relevant subschema for those tables.
-"""
-def extract_relevant_schema(user_query: str, schema: dict) -> str:
-    # Get the contents of the schema
-    schema_content = schema.get('schema', {})
-    print("Schema Content:", schema_content)  
+nltk.download('wordnet')
 
-   # Analyze the SQL query
+def extract_relevant_schema(user_query: str, schema: dict) -> str:
+    # Inicializa el lematizador y las stop words
+    lemmatizer = WordNetLemmatizer()
+    stop_words = set(stopwords.words('english'))  # Asegúrate de tener nltk.corpus.stopwords descargado
+
+    # Obtener el contenido del esquema
+    schema_content = schema.get('schema', {})
+
+    # Analizar la consulta del usuario
     parsed_query = sqlparse.parse(user_query)[0]
-    tokens = [token for token in parsed_query.tokens if not token.is_whitespace]
-    print("Parsed Tokens:", tokens) 
+    tokens = [str(token).lower() for token in parsed_query.tokens if not token.is_whitespace]
+    print("Parsed Tokens:", tokens)
+
+    # Eliminar stop words de los tokens
+    filtered_tokens = [token for token in tokens if token not in stop_words]
+    print("Filtered Tokens:", filtered_tokens)
 
     relevant_tables = set()
 
-    # Find relevant tables in the schema   
+    # Lemmatiza los tokens filtrados
+    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in filtered_tokens]
+    print("Lemmatized Tokens:", lemmatized_tokens)
+
+    # Buscar tablas relevantes en el esquema
     for table_name in schema_content.keys():
-        for token in tokens:
-            # Compares the table name, ignoring case
-            if str(token).lower() == table_name.lower():
-                relevant_tables.add(table_name)
-            # Also checks if the token is a substring of the table name
-            elif table_name.lower() in str(token).lower():
+        for token in lemmatized_tokens:
+            # Compara el nombre de la tabla, ignorando mayúsculas y usando una coincidencia más flexible
+            if re.match(re.escape(table_name.lower()), token):
+                relevant_tables.add(table_name)  # Tabla exacta
+
+            # Comprobar si el token se parece al nombre de la tabla
+            if re.sub(r's$', '', token) == re.sub(r's$', '', table_name.lower()):  # Ignora plural
+                relevant_tables.add(table_name)  # Tabla en plural
+            elif re.sub(r'$', '', table_name.lower()) in token:  # Coincidencia parcial
                 relevant_tables.add(table_name)
 
-    print("Relevant Tables Found:", relevant_tables) 
-    # Create a subschema with only the relevant tables and columns
-    sub_schema = {table: schema_content[table] for table in relevant_tables if table in schema_content}
-    
+    print("Relevant Tables Found:", relevant_tables)
+
+    # Crear un diccionario para filtrar las tablas por su relevancia
+    final_tables = {}
+    for table_name in relevant_tables:
+        # Agrega la tabla al conjunto final, asegurando que solo se mantenga una versión
+        if table_name not in final_tables:
+            final_tables[table_name] = schema_content[table_name]
+
+    print("Final Relevant Tables:", final_tables.keys())
+
+    # Crear un subschema solo con las tablas y columnas relevantes
+    sub_schema = {table: schema_content[table] for table in final_tables.keys()}
+
     return json.dumps(sub_schema, indent=4)
 
+def translate_query(user_query: str, model: str) -> str:
+    # Crea un mensaje del sistema para la traducción
+    system_message = f"""
+    Translate the following query from Spanish to English:
+    "{user_query}"
+    Return ONLY the translated text without any additional information.
+    """
 
+    if model == "openai":
+        return _call_openai_for_translation(system_message)
+    elif model == "mistral":
+        return _call_mistral_for_translation(system_message)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid model specified.")
+
+# Función de soporte para la traducción con OpenAI
+def _call_openai_for_translation(system_message: str) -> str:
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": system_message}]
+        )
+        return response.choices[0].message["content"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error generating translation response.")
+
+# Función de soporte para la traducción con Mistral
+def _call_mistral_for_translation(system_message: str) -> str:
+    try:
+        API_URL = os.getenv("API_URL")
+        headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
+
+        response = requests.post(API_URL, headers=headers, json={"messages": [{"role": "user", "content": system_message}]})
+        response.raise_for_status()
+        response_content = response.json()
+        return response_content['choices'][0]['message']['content']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error generating translation response.")
 
 
 
 def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     
     full_schema = get_db_schema(db)
-    print("Full Database Schema:", full_schema)
-    print("Schema keys:", full_schema.keys())
-    # Extract the relevant subschema based on the user query
-    relevant_schema = extract_relevant_schema(user_query, full_schema)
+ 
+    translate_query_response = translate_query(user_query, model)
+    relevant_schema = extract_relevant_schema(translate_query_response, full_schema)
     print("Relevant Database Schema:", relevant_schema)
     
     system_message = create_system_message(relevant_schema)
 
     if model == "openai":
-        return _call_openai(system_message, user_query, "sql")
+        return _call_openai(system_message, translate_query_response, "sql")
     elif model == "mistral":
-        return _call_mistral(system_message, user_query, "sql")
+        return _call_mistral(system_message, translate_query_response, "sql")
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
@@ -142,7 +203,10 @@ def _call_openai_for_response(system_message: str) -> str:
             model="gpt-4",
             messages=[{"role": "system", "content": system_message}]
         )
+        total_tokens = response['usage']['total_tokens']
+        print(f"Tokens totales: {total_tokens}")
         return response.choices[0].message["content"]
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error generating human-readable response.")
 
@@ -183,6 +247,7 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
 
         response_content = response.choices[0].message["content"]
         response_json = json.loads(response_content)
+        print("MIRA", response_json)
         if query_type == "sql":
             return extract_sql_query(response_content)
         elif query_type == "sparql":
