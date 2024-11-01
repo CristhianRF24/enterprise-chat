@@ -30,6 +30,7 @@ def extract_relevant_schema(user_query: str, schema: dict) -> str:
     # Analizar la consulta del usuario
     parsed_query = sqlparse.parse(user_query)[0]
     tokens = [str(token).lower() for token in parsed_query.tokens if not token.is_whitespace]
+    tokens = [word for token in tokens for word in token.split()]  # Divide tokens en palabras individuales
     print("Parsed Tokens:", tokens)
 
     # Eliminar stop words de los tokens
@@ -45,28 +46,34 @@ def extract_relevant_schema(user_query: str, schema: dict) -> str:
     # Buscar tablas relevantes en el esquema
     for table_name in schema_content.keys():
         for token in lemmatized_tokens:
-            # Compara el nombre de la tabla, ignorando mayúsculas y usando una coincidencia más flexible
+            # Comparar nombres de tablas y tokens
             if re.match(re.escape(table_name.lower()), token):
-                relevant_tables.add(table_name)  # Tabla exacta
-
-            # Comprobar si el token se parece al nombre de la tabla
-            if re.sub(r's$', '', token) == re.sub(r's$', '', table_name.lower()):  # Ignora plural
-                relevant_tables.add(table_name)  # Tabla en plural
-            elif re.sub(r'$', '', table_name.lower()) in token:  # Coincidencia parcial
+                relevant_tables.add(table_name)
+            if re.sub(r's$', '', token) == re.sub(r's$', '', table_name.lower()):
+                relevant_tables.add(table_name)
+            elif re.sub(r'$', '', table_name.lower()) in token:
                 relevant_tables.add(table_name)
 
     print("Relevant Tables Found:", relevant_tables)
 
-    # Crear un diccionario para filtrar las tablas por su relevancia
+    # Crear un diccionario para filtrar las tablas y añadir tablas relacionadas
     final_tables = {}
     for table_name in relevant_tables:
-        # Agrega la tabla al conjunto final, asegurando que solo se mantenga una versión
         if table_name not in final_tables:
             final_tables[table_name] = schema_content[table_name]
 
+        # Verificar si hay llaves foráneas en la tabla actual
+        for column in schema_content[table_name].get('columns', []):
+            column_name = column.get('COLUMN_NAME', '').lower()
+            # Si la columna indica una relación, intenta agregar la tabla relacionada
+            if column_name.endswith('_id'):
+                related_table_name = column_name.rsplit('_', 1)[0]
+                if related_table_name in schema_content:
+                    final_tables[related_table_name] = schema_content[related_table_name]
+
     print("Final Relevant Tables:", final_tables.keys())
 
-    # Crear un subschema solo con las tablas y columnas relevantes
+    # Crear el subesquema con las tablas relevantes
     sub_schema = {table: schema_content[table] for table in final_tables.keys()}
 
     return json.dumps(sub_schema, indent=4)
@@ -104,11 +111,14 @@ def _call_mistral_for_translation(system_message: str) -> str:
         headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
 
         response = requests.post(API_URL, headers=headers, json={"messages": [{"role": "user", "content": system_message}]})
+        print("Response status code:", response.status_code)
+        print("Response content:", response.text)
         response.raise_for_status()
         response_content = response.json()
         return response_content['choices'][0]['message']['content']
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error generating translation response.")
+        raise HTTPException(status_code=500, detail=f"Error generating translation response: {str(e)}")
+
 
 
 
