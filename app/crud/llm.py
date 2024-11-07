@@ -4,8 +4,7 @@ import requests
 from requests import Session
 from app.api.v1.endpoints.files import get_db_schema
 from dotenv import load_dotenv
-from app.rdf_generator import generate_schema, generate_ttl
-from sqlparse.sql import IdentifierList, Identifier
+from app.rdf_generator import generate_schema
 import json
 import re
 import os
@@ -20,33 +19,32 @@ load_dotenv()
 nltk.download('wordnet')
 
 def extract_relevant_schema(user_query: str, schema: dict) -> str:
-    # Inicializa el lematizador y las stop words
+    
     lemmatizer = WordNetLemmatizer()
-    stop_words = set(stopwords.words('english'))  # Asegúrate de tener nltk.corpus.stopwords descargado
-
-    # Obtener el contenido del esquema
+    stop_words = set(stopwords.words('english'))  
+    
     schema_content = schema.get('schema', {})
-
-    # Analizar la consulta del usuario
+    
+    # Analyze the user's query
     parsed_query = sqlparse.parse(user_query)[0]
     tokens = [str(token).lower() for token in parsed_query.tokens if not token.is_whitespace]
-    tokens = [word for token in tokens for word in token.split()]  # Divide tokens en palabras individuales
+    tokens = [word for token in tokens for word in token.split()] # Split tokens into individual words
     print("Parsed Tokens:", tokens)
 
-    # Eliminar stop words de los tokens
+    # Remove stop words from tokens
     filtered_tokens = [token for token in tokens if token not in stop_words]
     print("Filtered Tokens:", filtered_tokens)
 
     relevant_tables = set()
-
-    # Lemmatiza los tokens filtrados
+    
+    # Lemmatize leaked tokens
     lemmatized_tokens = [lemmatizer.lemmatize(token) for token in filtered_tokens]
     print("Lemmatized Tokens:", lemmatized_tokens)
 
-    # Buscar tablas relevantes en el esquema
+    # Find relevant tables in the schema
     for table_name in schema_content.keys():
         for token in lemmatized_tokens:
-            # Comparar nombres de tablas y tokens
+           # Compare table names and tokens
             if re.match(re.escape(table_name.lower()), token):
                 relevant_tables.add(table_name)
             if re.sub(r's$', '', token) == re.sub(r's$', '', table_name.lower()):
@@ -56,30 +54,31 @@ def extract_relevant_schema(user_query: str, schema: dict) -> str:
 
     print("Relevant Tables Found:", relevant_tables)
 
-    # Crear un diccionario para filtrar las tablas y añadir tablas relacionadas
+    # Create a dictionary to filter tables and add related tables
     final_tables = {}
     for table_name in relevant_tables:
         if table_name not in final_tables:
             final_tables[table_name] = schema_content[table_name]
 
-        # Verificar si hay llaves foráneas en la tabla actual
+        # Check if there are foreign keys in the current table
         for column in schema_content[table_name].get('columns', []):
             column_name = column.get('COLUMN_NAME', '').lower()
-            # Si la columna indica una relación, intenta agregar la tabla relacionada
+            # If the column indicates a relationship, try adding the related table
             if column_name.endswith('_id'):
                 related_table_name = column_name.rsplit('_', 1)[0]
                 if related_table_name in schema_content:
                     final_tables[related_table_name] = schema_content[related_table_name]
-
+  
+                
     print("Final Relevant Tables:", final_tables.keys())
 
-    # Crear el subesquema con las tablas relevantes
+    # Create the subschema with the relevant tables
     sub_schema = {table: schema_content[table] for table in final_tables.keys()}
 
     return json.dumps(sub_schema, indent=4)
 
 def translate_query(user_query: str, model: str) -> str:
-    # Crea un mensaje del sistema para la traducción
+   # Create a system message for translation
     system_message = f"""
     Translate the following query from Spanish to English:
     "{user_query}"
@@ -92,19 +91,22 @@ def translate_query(user_query: str, model: str) -> str:
         return _call_mistral_for_translation(system_message)
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
+    
+    # Support function for translation with OpenAI
 
-# Función de soporte para la traducción con OpenAI
 def _call_openai_for_translation(system_message: str) -> str:
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4-turbo",
             messages=[{"role": "system", "content": system_message}]
-        )
+        )    
+        total_tokens = response['usage']['total_tokens']
+        print(f"Tokens totales de la traduccion: {total_tokens}")
         return response.choices[0].message["content"]
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error generating translation response.")
 
-# Función de soporte para la traducción con Mistral
+# Support function for traslation with Mistral
 def _call_mistral_for_translation(system_message: str) -> str:
     try:
         API_URL = os.getenv("API_URL")
@@ -143,16 +145,20 @@ def generate_sql_query(user_query: str, db: Session, model: str) -> str:
 def create_system_message(schema: str) -> str:
     return f"""
     Given the following schema, write ONLY the SQL query that retrieves the requested information.
+    Do NOT provide explanations or additional text. Your response should strictly follow this JSON format:
     1. If the user query is in Spanish, first translate it to English.
     2. Based on the translated or original query, generate the SQL query that retrieves the requested information.
     3. Validate the generated SQL to ensure it is safe and syntactically correct before returning it.
+    4. review and fix the generated SQL query if you find reserved words or syntax errors.
+    5. If you see the word order or orders, change it to `order` with backticks. 
+
     
     Return the SQL query in this JSON format:
     {{
         "sql_query": "SELECT * FROM city;",
         "original_query": "Show me all the city"
     }}
-    You must STRICTLY follow this format and return ONLY the JSON. Do not provide explanations or additional information.
+    You must STRICTLY follow this format and return ONLY the JSON. Do not provide explanations or additional information when using mistral or openai.
     <schema>
     {schema}
     </schema>
@@ -197,8 +203,9 @@ def generate_human_readable_response(sql_results: list, user_query: str, model: 
     provide ONLY AND STRICTLY a clear and concise description in spanish.
     """
 
+    if not sql_results:
+       return("No se encontraron resultados para tu consulta. Por favor, intenta con otros criterios o verifica tu consulta.")
     
-
     if model == "openai":
         return _call_openai_for_response(system_message)
     elif model == "mistral":
@@ -210,11 +217,11 @@ def generate_human_readable_response(sql_results: list, user_query: str, model: 
 def _call_openai_for_response(system_message: str) -> str:
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4-turbo",
             messages=[{"role": "system", "content": system_message}]
         )
         total_tokens = response['usage']['total_tokens']
-        print(f"Tokens totales: {total_tokens}")
+        print(f"Tokens totales de verbalizacion: {total_tokens}")
         return response.choices[0].message["content"]
     
     except Exception as e:
@@ -240,7 +247,7 @@ def _call_mistral_for_response(system_message: str) -> str:
 def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4-turbo",
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_query}
@@ -252,7 +259,7 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
         completion_tokens = response['usage']['completion_tokens']
         
         print(f"Tokens del prompt (incluye schema): {prompt_tokens}")
-        print(f"Tokens del completado: {completion_tokens}")
+        print(f"Tokens de la respuesta sql: {completion_tokens}")
         print(f"Tokens totales: {total_tokens}")
 
         response_content = response.choices[0].message["content"]
@@ -280,7 +287,12 @@ def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
         response.raise_for_status()
         response_content = response.json()
         sql_query_response = response_content['choices'][0]['message']['content']
-    
+        
+        
+        tokens_used = response_content.get("usage", {}).get("total_tokens")
+        if tokens_used is not None:
+            print(f"Tokens usados en la respuesta: {tokens_used}")
+            
         print("MIRA", sql_query_response)
 
         query_json = re.sub(r'```json\n|\n```', '', sql_query_response).strip()
