@@ -8,7 +8,8 @@ load_dotenv()
 sparql_endpoint = os.getenv("SPARQL_ENDPOINT")
 sql_endpoint = os.getenv("SQL_ENDPOINT")
 
-st.markdown("<h1 style='text-align: center;'>Chat with the Database</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>Charla con la Base de Datos</h1>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center;'>Centro Movil</h1>", unsafe_allow_html=True)
 
 st.markdown("""
     <style>
@@ -73,7 +74,6 @@ def send_message():
             response = requests.post(endpoint, json=payload)
             if response.status_code == 200:
                 data = response.json()
-                  # Check if `results` is a string (the way it arrives)
                 if "results" in data and isinstance(data["results"], str):
                     results = data["results"]
                 else:
@@ -88,25 +88,40 @@ def send_message():
         st.session_state.history.append({"user": user_input, "response": results})
         st.session_state.input = ""
 
+def set_input_text(message):
+    st.session_state.input = message
+
 def toggle_model(new_model):
     st.session_state.model = new_model 
     new_model_name = "OpenAI" if st.session_state.model else "Mistral"
-    st.session_state.history.append({"model_change": f"Changed to the model {new_model_name}"})
+    st.session_state.history.append({"model_change": f"Se cambio al modelo {new_model_name}"})
     st.rerun()
 
 def toggle_knowledge_graph(new_use_kg):
     st.session_state.use_knowledge_graph = new_use_kg
-    new_state_message = "Using Knowledge Graph" if new_use_kg else "Using SQL Database"
+    new_state_message = "Usando grafo de conocimiento" if new_use_kg else "Usando Base de Datos SQL"
     st.session_state.history.append({"knowledge_graph_change": f" {new_state_message}"})
     st.rerun()
 
-st.write("You:")
-user_input = st.text_input("", key="input", on_change=send_message, placeholder="Type your message here...", label_visibility="collapsed")
+st.write("Tú:")
+user_input = st.text_input("", key="input", on_change=send_message, placeholder="Escribe tu mensaje aquí...", label_visibility="collapsed")
+
+common_messages = [
+    "Ver para el cliente (nombre del cliente) cantidad de ordenes por estado",
+    "Ver para el cliente (nombre del cliente) la orden con el precio mas alto",
+    "Ver para el cliente (nombre del cliente) la cantidad de ordenes en total",
+    "Soy el vendedor (nombre del vendedor), lista los nombres de mis clientes por ciudad"
+]
+
+st.sidebar.markdown("### Mensajes frecuentes")
+for msg in common_messages:
+        st.sidebar.button(msg, on_click=set_input_text, args=(msg,))
 
 col1, col2 = st.columns([1, 2])
 
 with col1:
-    st.markdown("<p style='text-align: left; font-weight: bold;'>Default: SQL Database</p>", unsafe_allow_html=True)
+    knowledge_graph_status = "Usando: Grafo Conocimiento" if st.session_state.use_knowledge_graph else "Usando: SQL"
+    st.markdown(f"<p style='text-align: left; font-weight: bold;'>{knowledge_graph_status}</p>", unsafe_allow_html=True)    
     kg_switch = st_toggle_switch(
         label="Knowledge Graph",  
         key="knowledge_graph_toggle",
@@ -120,7 +135,8 @@ with col1:
         toggle_knowledge_graph(kg_switch)
 
 with col2:
-    st.markdown("<p style='text-align: right; font-weight: bold;'>Default: Mistral</p>", unsafe_allow_html=True)
+    model_status = "Usando: OpenAI" if st.session_state.model else "Usando: Mistral"
+    st.markdown(f"<p style='text-align: right; font-weight: bold;'>{model_status}</p>", unsafe_allow_html=True)    
     model_switch = st_toggle_switch(
         label="OpenAI",  
         key="toggle",
