@@ -15,3 +15,11 @@ streamlit
 streamlit-toggle-switch
 sqlparse
 nltk
+numpy
+scikit-learn
+tqdm
+jsonschema
+fsspec 
+filelock
+urllib3 
+certifi

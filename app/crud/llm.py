@@ -78,9 +78,26 @@ def extract_relevant_schema(user_query: str, schema: dict) -> str:
     return json.dumps(sub_schema, indent=4)
 
 def translate_query(user_query: str, model: str) -> str:
-   # Create a system message for translation
+    glossary = {
+        "cliente": "client",
+        "usuario": "user",
+        "ciudad": "city",
+        "ciudades": "city",
+        "usuario": "user",
+        "pagos": "payment",
+        "pago": "payment",
+    }
+
+    # Build the glossary instructions in the system message
+    glossary_instructions = "\n".join([f'"{term}": "{translation}"' for term, translation in glossary.items()])
+    
+    # Create the system message with the glossary
     system_message = f"""
-    Translate the following query from Spanish to English:
+    Translate the following query from Spanish to English using the specified glossary terms.
+    Here are the preferred translations:
+    {glossary_instructions}
+
+    Text to translate:
     "{user_query}"
     Return ONLY the translated text without any additional information.
     """
@@ -113,7 +130,6 @@ def _call_mistral_for_translation(system_message: str) -> str:
         headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_TOKEN')}"}
 
         response = requests.post(API_URL, headers=headers, json={"messages": [{"role": "user", "content": system_message}]})
-        print("Response status code:", response.status_code)
         print("Response content:", response.text)
         response.raise_for_status()
         response_content = response.json()
@@ -151,6 +167,7 @@ def create_system_message(schema: str) -> str:
     3. Validate the generated SQL to ensure it is safe and syntactically correct before returning it.
     4. review and fix the generated SQL query if you find reserved words or syntax errors.
     5. If you see the word order or orders, change it to `order` with backticks. 
+
 
     
     Return the SQL query in this JSON format:
@@ -241,9 +258,8 @@ def _call_mistral_for_response(system_message: str) -> str:
         raise HTTPException(status_code=500, detail="Error generating human-readable response.")
     
     
-    
-    
-
+ 
+ 
 def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
     try:
         response = openai.ChatCompletion.create(
@@ -271,7 +287,7 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
             return response_json.get("sparql_query")
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Error parsing the OpenAI response.")
-    
+
 
 def _call_mistral(system_message: str, user_query: str, query_type: str) -> str:
     try:
