@@ -1,6 +1,6 @@
 # ENTERPRISE CHAT
 
-## Descripción
+## Description
 This project is a business chat bot aimed at improving customer service.
 ## Índice
 - [Installation](#installation)
