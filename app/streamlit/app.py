@@ -4,11 +4,11 @@ import os
 from streamlit_toggle import st_toggle_switch
 from dotenv import load_dotenv
 
-from token_counter import get_total_tokens
 load_dotenv()
 
 sparql_endpoint = os.getenv("SPARQL_ENDPOINT")
 sql_endpoint = os.getenv("SQL_ENDPOINT")
+
 
 st.markdown("<h1 style='text-align: center;'>Charla con la Base de Datos</h1>", unsafe_allow_html=True)
 st.markdown("<h3 style='text-align: center;'>Centro Movil</h1>", unsafe_allow_html=True)
@@ -42,6 +42,8 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+
+    
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -54,6 +56,7 @@ if "model" not in st.session_state:
 if "use_knowledge_graph" not in st.session_state:
     st.session_state.use_knowledge_graph = False
 
+
 for chat in st.session_state.history:
     if 'model_change' in chat:
         st.markdown(f"<div class='model-change'>{chat['model_change']}</div>", unsafe_allow_html=True)
@@ -62,6 +65,9 @@ for chat in st.session_state.history:
     else:
         st.markdown(f"<div class='bubble-user'>{chat['user']}</div>", unsafe_allow_html=True) 
         st.markdown(f"<div class='bubble-database'>{chat['response']}</div>", unsafe_allow_html=True)
+        
+
+
 
 def send_message():
     user_input = st.session_state.input
@@ -89,7 +95,6 @@ def send_message():
 
         st.session_state.history.append({"user": user_input, "response": results})
         st.session_state.input = ""
-        update_token_progress() 
 
 def set_input_text(message):
     st.session_state.input = message
@@ -153,14 +158,6 @@ with col2:
         toggle_model(model_switch)
 
 st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
-token_bar = st.progress(0) 
-total_tokens = get_total_tokens()
-token_limit = 50000 
 
-def update_token_progress():
-    total_tokens = get_total_tokens()
-    token_percentage = min(total_tokens / token_limit, 1.0)  # Calcula el porcentaje usado
-    token_bar.progress(token_percentage)  # Actualiza la barra con el porcentaje actual
-    st.markdown(f"Tokens utilizados: {total_tokens} de {token_limit}")
 
-update_token_progress() 
+
