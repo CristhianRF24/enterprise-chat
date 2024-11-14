@@ -13,7 +13,7 @@ import sqlparse
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 
-from app.token_counter import add_tokens, get_total_tokens
+from app.streamlit.token_counter import add_tokens, get_total_tokens
 
 
 load_dotenv()

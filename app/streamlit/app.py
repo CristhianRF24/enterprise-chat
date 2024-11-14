@@ -3,6 +3,8 @@ import requests
 import os
 from streamlit_toggle import st_toggle_switch
 from dotenv import load_dotenv
+
+from token_counter import get_total_tokens
 load_dotenv()
 
 sparql_endpoint = os.getenv("SPARQL_ENDPOINT")
@@ -87,6 +89,7 @@ def send_message():
 
         st.session_state.history.append({"user": user_input, "response": results})
         st.session_state.input = ""
+        update_token_progress() 
 
 def set_input_text(message):
     st.session_state.input = message
@@ -107,10 +110,10 @@ st.write("Tú:")
 user_input = st.text_input("", key="input", on_change=send_message, placeholder="Escribe tu mensaje aquí...", label_visibility="collapsed")
 
 common_messages = [
-    "Ver para el cliente (nombre del cliente) cantidad de ordenes por estado",
-    "Ver para el cliente (nombre del cliente) la orden con el precio mas alto",
-    "Ver para el cliente (nombre del cliente) la cantidad de ordenes en total",
-    "Soy el vendedor (nombre del vendedor), lista los nombres de mis clientes por ciudad"
+    "Hola, soy (nombre del cliente). ¿Podrían decirme cuántas órdenes tengo actualmente en cada estado?",
+    "Hola, quiero ver cuál es la orden con el precio más alto para el cliente (nombre del cliente) . ¿Me podrían ayudar?",
+    "Hola, quiero ver para el cliente (nombre del cliente) las ordenes por estado",
+    "Hola, soy el vendedor (nombre del vendedor) y quiero ver todos los nombres de mis clientes por ciudad"
 ]
 
 st.sidebar.markdown("### Mensajes frecuentes")
@@ -150,3 +153,14 @@ with col2:
         toggle_model(model_switch)
 
 st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
+token_bar = st.progress(0) 
+total_tokens = get_total_tokens()
+token_limit = 50000 
+
+def update_token_progress():
+    total_tokens = get_total_tokens()
+    token_percentage = min(total_tokens / token_limit, 1.0)  # Calcula el porcentaje usado
+    token_bar.progress(token_percentage)  # Actualiza la barra con el porcentaje actual
+    st.markdown(f"Tokens utilizados: {total_tokens} de {token_limit}")
+
+update_token_progress() 
