@@ -13,6 +13,8 @@ import sqlparse
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 
+from app.token_counter import add_tokens, get_total_tokens
+
 
 load_dotenv()
 
@@ -77,21 +79,46 @@ def extract_relevant_schema(user_query: str, schema: dict) -> str:
 
     return json.dumps(sub_schema, indent=4)
 
+
 def translate_query(user_query: str, model: str) -> str:
-   # Create a system message for translation
+    glossary = {
+        "cliente": "client",
+        "usuario": "user",
+        "ciudad": "city",
+        "ciudades": "city",
+        "pagos": "payment",
+        "pago": "payment",
+    }
+
+    # Build the glossary instructions in the system message
+    glossary_instructions = "\n".join([f'"{term}": "{translation}"' for term, translation in glossary.items()])
+
+    # Create the system message with the glossary
     system_message = f"""
-    Translate the following query from Spanish to English:
+    Translate the following query from Spanish to English using the specified glossary terms.
+    Here are the preferred translations:
+    {glossary_instructions}
+
+    Use ONLY the translations provided in the glossary, even if other translations might seem grammatically correct.
+    Text to translate:
     "{user_query}"
     Return ONLY the translated text without any additional information.
     """
 
+    # Call the translation model
     if model == "openai":
-        return _call_openai_for_translation(system_message)
+        translation = _call_openai_for_translation(system_message)
     elif model == "mistral":
-        return _call_mistral_for_translation(system_message)
+        translation = _call_mistral_for_translation(system_message)
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
-    
+
+    # Post-process the translation to ensure glossary consistency
+    for term, translation_term in glossary.items():
+        # Ensure exact glossary match (example. replace "cities" with "city" if it appears)
+        translation = re.sub(rf'\b{re.escape(translation_term)}s\b', translation_term, translation, flags=re.IGNORECASE)
+    print("Translation:", translation)
+    return translation
     # Support function for translation with OpenAI
 
 def _call_openai_for_translation(system_message: str) -> str:
@@ -101,7 +128,9 @@ def _call_openai_for_translation(system_message: str) -> str:
             messages=[{"role": "system", "content": system_message}]
         )    
         total_tokens = response['usage']['total_tokens']
+        add_tokens(total_tokens)
         print(f"Tokens totales de la traduccion: {total_tokens}")
+        print("TOKENS USADOS EN TOTAL", get_total_tokens())
         return response.choices[0].message["content"]
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error generating translation response.")
@@ -158,6 +187,7 @@ def create_system_message(schema: str) -> str:
         "sql_query": "SELECT * FROM city;",
         "original_query": "Show me all the city"
     }}
+    
     You must STRICTLY follow this format and return ONLY the JSON. Do not provide explanations or additional information when using mistral or openai.
     <schema>
     {schema}
@@ -198,7 +228,7 @@ def generate_human_readable_response(sql_results: list, user_query: str, model: 
     results_text = "\n".join([", ".join([f"{key}: {value}" for key, value in row.items()]) for row in sql_results])
     
     system_message = f"""
-    Convert the following SQL results into a user-friendly summary:
+   taking into account the user query {user_query}  Convert the following SQL results into a user-friendly summary:
     {results_text}
     provide ONLY AND STRICTLY a clear and concise description in spanish.
     """
@@ -221,7 +251,10 @@ def _call_openai_for_response(system_message: str) -> str:
             messages=[{"role": "system", "content": system_message}]
         )
         total_tokens = response['usage']['total_tokens']
+        add_tokens(total_tokens)
         print(f"Tokens totales de verbalizacion: {total_tokens}")
+        print("TOKENS USADOS EN TOTAL", get_total_tokens())
+        
         return response.choices[0].message["content"]
     
     except Exception as e:
@@ -255,12 +288,15 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
         )
 
         total_tokens = response['usage']['total_tokens']
+        add_tokens(total_tokens) 
         prompt_tokens = response['usage']['prompt_tokens']
         completion_tokens = response['usage']['completion_tokens']
         
         print(f"Tokens del prompt (incluye schema): {prompt_tokens}")
         print(f"Tokens de la respuesta sql: {completion_tokens}")
         print(f"Tokens totales: {total_tokens}")
+        print("TOKENS USADOS EN TOTAL", get_total_tokens())
+        
 
         response_content = response.choices[0].message["content"]
         response_json = json.loads(response_content)
