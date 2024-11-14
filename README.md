@@ -35,7 +35,7 @@ This project is a business chat bot aimed at improving customer service.
 ## Use
 1. Run the following command to start the backend project:
    ```bash
-   uvicorn app.main:app
+   uvicorn app.main:app --reload
    ```
 2. To launch the project interface, open another terminal and navigate to the appropriate folder:
    ```bash
