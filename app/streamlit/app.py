@@ -121,7 +121,9 @@ common_messages = [
     "Hola, soy el vendedor (nombre del vendedor) y quiero ver todos los nombres de mis clientes por ciudad",
     "Hola, por favor muestrame (n) reclamos que tenga en el estado 'EN PROGRESO'",
     "Hola, por favor muestrame (n) reclamos por estado",
-    "Hola, por favor muestrame 5 reclamos que tenga estado 'RESUELTO'"
+    "Hola, por favor muestrame (n) reclamos que tenga estado 'RESUELTO'",
+    "Hola, muestrame (n) reclamos del cliente (nombre del cliente) que tenga estado 'EN PROGRESO'"
+    "Hola, soy el cliente (nombre del cliente) y quiero ver mis (n) ultimos pagos realizados"
 ]
 
 st.sidebar.markdown("### Mensajes frecuentes")
