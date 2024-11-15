@@ -118,7 +118,10 @@ common_messages = [
     "Hola, soy (nombre del cliente). ¿Podrían decirme cuántas órdenes tengo actualmente en cada estado?",
     "Hola, quiero ver cuál es la orden con el precio más alto para el cliente (nombre del cliente) . ¿Me podrían ayudar?",
     "Hola, quiero ver para el cliente (nombre del cliente) las ordenes por estado",
-    "Hola, soy el vendedor (nombre del vendedor) y quiero ver todos los nombres de mis clientes por ciudad"
+    "Hola, soy el vendedor (nombre del vendedor) y quiero ver todos los nombres de mis clientes por ciudad",
+    "Hola, por favor muestrame (n) reclamos que tenga en el estado 'EN PROGRESO'",
+    "Hola, por favor muestrame (n) reclamos por estado",
+    "Hola, por favor muestrame 5 reclamos que tenga estado 'RESUELTO'"
 ]
 
 st.sidebar.markdown("### Mensajes frecuentes")
