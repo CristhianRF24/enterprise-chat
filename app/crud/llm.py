@@ -88,6 +88,13 @@ def translate_query(user_query: str, model: str) -> str:
         "ciudades": "city",
         "pagos": "payment",
         "pago": "payment",
+        "estado": "status",
+        "reclamos": "claim",
+        "reclamo" : "claim",
+        "EN PROGRESO" : "EN PROGRESO",
+        "en progreso" : "EN PROGRESO",
+        "resuelto" : "RESUELTO",
+        "RESUELTO" : "RESUELTO",
     }
 
     # Build the glossary instructions in the system message
