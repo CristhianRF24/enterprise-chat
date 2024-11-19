@@ -15,10 +15,12 @@ Before installation, create a Python virtual environment using version **3.12**:
    python3.12 -m venv env
    ```
 3. Activate the virtual environment:
+
    On Linux/macOS:
    ```bash
    source env/bin/activate
    ```
+
    On Windows:
    ```bash
    .\env\Scripts\activate
