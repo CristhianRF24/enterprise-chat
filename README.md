@@ -5,6 +5,7 @@ This project is a business chat bot aimed at improving customer service.
 ## Índice
 - [Installation](#installation)
 - [Use](#use)
+- [Arquitecture](#arquitecture)
 ## Instalación
 1. Clone this repository.
    ```bash
@@ -54,4 +55,16 @@ This project is a business chat bot aimed at improving customer service.
    - Create a new repository in GraphDB named knowledge_graph to upload your RDF graph.
    - After starting with step 1, you can run the backend method generate_and_load_ttl_endpoint to automatically load the database into graphdb.
 Note: Ensure the GRAPHDB_URL and REPO_NAME values in your .env file match your GraphDB configuration.
+
+## Arquitecture
+
+### Arquitectura del Proyecto
+
+```mermaid
+graph TD;
+    Usuario-->Frontend;
+    Frontend-->API[(FastAPI)];
+    API-->DB[(MySQL)];
+    API-->OpenAI[(API de OpenAI)];
+    API-->Mistral[(Api de Mistral)]
 
