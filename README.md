@@ -6,11 +6,33 @@ This project is a business chat bot aimed at improving customer service.
 - [Installation](#installation)
 - [Use](#use)
 - [Arquitecture](#arquitecture)
-## Instalación
+  
+## Pre-requisites
+Before installation, create a Python virtual environment using version **3.12**:
+1. Ensure Python 3.12 is installed on your system. You can download it from the [official Python website](https://www.python.org/).
+2. Create a virtual environment:
+   ```bash
+   python3.12 -m venv env
+   ```
+3. Activate the virtual environment:
+
+   On Linux/macOS:
+   ```bash
+   source env/bin/activate
+   ```
+
+   On Windows:
+   ```bash
+   .\env\Scripts\activate
+   ```
+Proceed to the installation steps below.
+   
+## Instalation
 1. Clone this repository.
    ```bash
    git clone https://github.com/CristhianRF24/enterprise-chat.git
    ```
+   
 2. Install dependencies.
    ```bash
    pip install -r requirements.txt
@@ -38,19 +60,15 @@ This project is a business chat bot aimed at improving customer service.
    ```bash
    uvicorn app.main:app
    ```
-2. To launch the project interface, open another terminal and navigate to the appropriate folder:
+2. To launch the project interface and run the following command to start the interface with Streamlit:
    ```bash
-   cd .\app\streamlit\
-   ```
-3. Then, run the following command to start the interface with Streamlit:
-   ```bash
-   streamlit run app.py  
+   streamlit run app/streamlit/app.py
    ```
 
 4. (Optional) Set up the Knowledge Graph in GraphDB for visualization
    To visualize the knowledge graph interactively, you can install and configure GraphDB.
 
-   - Download and install GraphDB following the instructions on their website.
+   - Download and install GraphDB following the instructions on the next website: https://graphdb.ontotext.com/.
    - Start GraphDB and access the interface in your browser at http://localhost:7200.
    - Create a new repository in GraphDB named knowledge_graph to upload your RDF graph.
    - After starting with step 1, you can run the backend method generate_and_load_ttl_endpoint to automatically load the database into graphdb.
