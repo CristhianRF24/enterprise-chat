@@ -7,6 +7,7 @@ import rdflib
 import spacy
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text
+from translate import Translator
 from app.crud.file_crud import create_file, file_exists
 from app.db.db import SessionLocal, get_database_schema, get_db
 from pathlib import Path
@@ -24,6 +25,7 @@ from langchain.agents import initialize_agent, Tool, AgentType
 from langchain_openai import ChatOpenAI
 from langchain.schema import Document
 import os
+from langdetect import detect
 
 load_dotenv()
 router = APIRouter()
@@ -203,6 +205,12 @@ async def ask_question(request: UserQueryRequest, db: Session = Depends(get_db))
     tools = create_tools(vector_store)
     agent = create_agent(tools)
 
+    detected_language = detect(request.query)
+    
+    if detected_language == 'es':  # Si la consulta está en español
+        translator = Translator(to_lang="en", from_lang="es")
+        translated_query = translator.translate(request.query)
+        request.query = translated_query
     # Ejecutar el agente con la consulta del usuario
     try:
         response = agent.invoke(request.query)
@@ -211,6 +219,20 @@ async def ask_question(request: UserQueryRequest, db: Session = Depends(get_db))
         raise HTTPException(status_code=500, detail=f"Error al ejecutar el agente: {str(e)}")
 
     return {"query": request.query, "response": response}
+
+@router.get('/check-pdf-loaded/')
+async def check_pdf_loaded():
+    """
+    Endpoint para verificar si hay algún archivo PDF cargado en el sistema.
+    """
+    # Verificar si hay archivos PDF en la carpeta de carga
+    pdf_files = [f for f in Path(UPLOAD_FOLDER).iterdir() if f.suffix.lower() == '.pdf']
+
+    # Si hay al menos un archivo PDF, devolver True, de lo contrario False
+    if pdf_files:
+        return {"pdf_loaded": True}
+    else:
+        return {"pdf_loaded": False}
 
 @router.post("/run_sql/")
 def run_sql(query: str):
