@@ -5,6 +5,7 @@ import rdflib
 import spacy
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text
+from translate import Translator
 from app.crud.file_crud import create_file, file_exists
 from app.db.db import SessionLocal, get_database_schema, get_db
 from pathlib import Path
@@ -19,10 +20,15 @@ from langchain.embeddings import OpenAIEmbeddings
 from app.rdf_generator import generate_ttl
 from langchain.vectorstores import FAISS
 from langchain.document_loaders import PyPDFLoader
+from langdetect import detect
+from langchain.agents import initialize_agent, Tool, AgentType
+from langchain_openai import ChatOpenAI
+import os
 
 load_dotenv()
 router = APIRouter()
 nlp = spacy.load("es_core_news_sm")
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
 UPLOAD_FOLDER = './uploaded_files'
 VECTOR_STORE_FOLDER = './vector_stores'
@@ -31,6 +37,10 @@ VECTOR_STORE_JSON = f'{VECTOR_STORE_FOLDER}/vector_store.json'
 class QueryRequest(BaseModel):
     query: str
     k: int
+
+class UserQueryRequest(BaseModel):
+    query: str
+    model: str 
 
 def clean_text(raw_text):
     text = re.sub(r"metadata=\{.*?\}", "", raw_text)
@@ -68,6 +78,25 @@ def create_vector_index(texts, existing_index=None):
         return existing_index
     return FAISS.from_documents(texts, embeddings)
 
+def create_tools(vector_store):
+    retriever = vector_store.as_retriever()
+    tool = Tool(
+        name="Document Retriever",
+        func=lambda query: retriever.invoke(query),  
+        description="Usado para recuperar documentos relevantes para la consulta"
+    )
+    return [tool]
+
+def create_agent(tools):
+    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0, openai_api_key=openai_api_key)
+    agent = initialize_agent(
+        tools,
+        llm,
+        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True
+    )
+    return agent
+
 @router.post('/uploadfile/')
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     
@@ -85,7 +114,6 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     with open(file_location, "wb") as buffer:
         buffer.write(await file.read())
         
-    # Save the file information to the database
     db_file = create_file(db, filename=file.filename, filetype=file.content_type, filepath=file_location)
     
     texts = process_pdf(file_location)
@@ -103,6 +131,37 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
 
     return {"filename": file.filename, "file_id": db_file.id}
  
+@router.post('/ask/')
+async def ask_question(request: UserQueryRequest, db: Session = Depends(get_db)):
+    """
+    Endpoint para recibir una pregunta del usuario y responder utilizando el agente.
+    """
+    if not Path(f"{VECTOR_STORE_FOLDER}/index.faiss").is_file() or not Path(f"{VECTOR_STORE_FOLDER}/index.pkl").is_file():
+        raise HTTPException(status_code=404, detail="Índice vectorial no encontrado. Por favor, sube un archivo primero.")
+    
+    try:
+        embeddings = OpenAIEmbeddings()
+        vector_store = FAISS.load_local(VECTOR_STORE_FOLDER, embeddings, allow_dangerous_deserialization=True)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al cargar el vector store: {str(e)}")
+
+    tools = create_tools(vector_store)
+    agent = create_agent(tools)
+
+    detected_language = detect(request.query)
+    
+    if detected_language == 'es': 
+        translator = Translator(to_lang="en", from_lang="es")
+        translated_query = translator.translate(request.query)
+        request.query = translated_query
+    try:
+        response = agent.invoke(request.query)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al ejecutar el agente: {str(e)}")
+
+    return {"query": request.query, "response": response}
+
 @router.post("/run_sql/")
 def run_sql(query: str):
     try:
