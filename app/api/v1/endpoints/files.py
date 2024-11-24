@@ -1,5 +1,8 @@
+import re
 from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
+from langchain_text_splitters import CharacterTextSplitter
 import rdflib
+import spacy
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text
 from app.crud.file_crud import create_file, file_exists
@@ -12,12 +15,14 @@ from dotenv import load_dotenv
 from app.graphdb_integration import load_ttl_to_graphdb
 import json
 from rdflib import Graph
-
+from langchain.embeddings import OpenAIEmbeddings
 from app.rdf_generator import generate_ttl
-
+from langchain.vectorstores import FAISS
+from langchain.document_loaders import PyPDFLoader
 
 load_dotenv()
 router = APIRouter()
+nlp = spacy.load("es_core_news_sm")
 
 UPLOAD_FOLDER = './uploaded_files'
 VECTOR_STORE_FOLDER = './vector_stores'
@@ -27,6 +32,41 @@ class QueryRequest(BaseModel):
     query: str
     k: int
 
+def clean_text(raw_text):
+    text = re.sub(r"metadata=\{.*?\}", "", raw_text)
+    text = re.sub(r"http[s]?://\S+", "", text)
+    text = re.sub(r"(?<![\.\?!])\n", " ", text) 
+    text = re.sub(r"Ignoring.*?object.*?\n", "", text)
+    text = re.sub(r"Special Issue.*?\n", "", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    text = text.strip()
+    return text
+
+def lemmatize_text(text):
+    doc = nlp(text)
+    lemmatized = " ".join([token.lemma_ for token in doc if not token.is_stop and not token.is_punct])
+    return lemmatized
+
+def process_pdf(file_path):
+    loader = PyPDFLoader(file_path)
+    documents = loader.load()
+
+    processed_texts = []
+    for doc in documents:
+        cleaned_text = clean_text(doc.page_content)
+        lemmatized_text = lemmatize_text(cleaned_text)
+        doc.page_content = lemmatized_text
+        processed_texts.append(doc)
+    
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    return text_splitter.split_documents(processed_texts)
+
+def create_vector_index(texts, existing_index=None):
+    embeddings = OpenAIEmbeddings()
+    if existing_index:
+        existing_index.add_documents(texts)
+        return existing_index
+    return FAISS.from_documents(texts, embeddings)
 
 @router.post('/uploadfile/')
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -48,26 +88,21 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     # Save the file information to the database
     db_file = create_file(db, filename=file.filename, filetype=file.content_type, filepath=file_location)
     
-    pipeline = PDFProcessingPipeline(file_location)
-    new_vector_store = pipeline.run_pipeline()
+    texts = process_pdf(file_location)
+    new_vector_store = create_vector_index(texts)
 
     if Path(VECTOR_STORE_JSON).is_file():
-        with open(VECTOR_STORE_JSON, 'r') as f:
-            combined_store = json.load(f).get("vector_store", [])
+        existing_index = FAISS.load_local(VECTOR_STORE_FOLDER, OpenAIEmbeddings())
+        existing_index.add_documents(new_vector_store.docstore._dict.values())
     else:
-        combined_store = []
+        existing_index = new_vector_store
 
-    combined_store.extend(new_vector_store)
-    
-    with open(VECTOR_STORE_JSON, 'w') as f:
-        json.dump({"vector_store": combined_store}, f)
+    existing_index.save_local(VECTOR_STORE_FOLDER)
 
     create_or_update_vector_store(db, VECTOR_STORE_JSON)
 
     return {"filename": file.filename, "file_id": db_file.id}
  
- 
-
 @router.post("/run_sql/")
 def run_sql(query: str):
     try:
@@ -94,7 +129,6 @@ def run_sql(query: str):
 
     finally:
         session.close()
-
 
 @router.get("/db/schema/")
 def get_db_schema(db: Session = Depends(get_db)):
