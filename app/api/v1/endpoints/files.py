@@ -114,7 +114,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     with open(file_location, "wb") as buffer:
         buffer.write(await file.read())
         
-    db_file = create_file(db, filename=file.filename, filetype=file.content_type, filepath=file_location)
+    db_file = create_file(db, filename=file.filename, filetype="pdf", filepath=file_location)
     
     texts = process_pdf(file_location)
     new_vector_store = create_vector_index(texts)
