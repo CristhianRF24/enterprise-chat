@@ -162,6 +162,20 @@ async def ask_question(request: UserQueryRequest, db: Session = Depends(get_db))
 
     return {"query": request.query, "response": response}
 
+@router.get('/check-pdf-loaded/')
+async def check_pdf_loaded():
+    """
+    Endpoint para verificar si hay algún archivo PDF cargado en el sistema.
+    """
+    # Verificar si hay archivos PDF en la carpeta de carga
+    pdf_files = [f for f in Path(UPLOAD_FOLDER).iterdir() if f.suffix.lower() == '.pdf']
+
+    # Si hay al menos un archivo PDF, devolver True, de lo contrario False
+    if pdf_files:
+        return {"pdf_loaded": True}
+    else:
+        return {"pdf_loaded": False}
+
 @router.post("/run_sql/")
 def run_sql(query: str):
     try:
