@@ -15,3 +15,6 @@ streamlit
 streamlit-toggle-switch
 sqlparse
 nltk
+translate
+langdetect
+faiss-cpu
