@@ -130,7 +130,7 @@ def translate_query(user_query: str, model: str) -> str:
 
 def _call_openai_for_translation(system_message: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.Completion.create(
             model="gpt-4-turbo",
             messages=[{"role": "system", "content": system_message}]
         )    
@@ -140,6 +140,7 @@ def _call_openai_for_translation(system_message: str) -> str:
         print("TOKENS USADOS EN TOTAL", get_total_tokens())
         return response.choices[0].message["content"]
     except Exception as e:
+        print("error",e)
         raise HTTPException(status_code=500, detail="Error generating translation response.")
 
 # Support function for traslation with Mistral
@@ -253,7 +254,7 @@ def generate_human_readable_response(sql_results: list, user_query: str, model: 
 # Support function to generate readable response with OpenAI
 def _call_openai_for_response(system_message: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.Completion.create(
             model="gpt-4-turbo",
             messages=[{"role": "system", "content": system_message}]
         )
@@ -286,7 +287,7 @@ def _call_mistral_for_response(system_message: str) -> str:
 
 def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.Completion.create(
             model="gpt-4-turbo",
             messages=[
                 {"role": "system", "content": system_message},
