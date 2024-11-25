@@ -15,7 +15,7 @@ from rdflib import Graph
 
 from app.rdf_generator import generate_ttl
 
-
+ 
 load_dotenv()
 router = APIRouter()
 

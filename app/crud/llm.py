@@ -12,9 +12,7 @@ import nltk
 import sqlparse
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
-
 from app.streamlit.token_counter import add_tokens, get_total_tokens
-
 
 load_dotenv()
 
@@ -150,7 +148,7 @@ def _call_mistral_for_translation(system_message: str) -> str:
 
         response = requests.post(API_URL, headers=headers, json={"messages": [{"role": "user", "content": system_message}]})
         print("Response status code:", response.status_code)
-        print("Response content:", response.text)
+        print("Response content:", response.text) 
         response.raise_for_status()
         response_content = response.json()
         return response_content['choices'][0]['message']['content']
