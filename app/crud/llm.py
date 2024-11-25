@@ -140,6 +140,7 @@ def _call_openai_for_translation(system_message: str) -> str:
         print("TOKENS USADOS EN TOTAL", get_total_tokens())
         return response.choices[0].message["content"]
     except Exception as e:
+        print("error:",e)
         raise HTTPException(status_code=500, detail="Error generating translation response.")
 
 # Support function for traslation with Mistral
