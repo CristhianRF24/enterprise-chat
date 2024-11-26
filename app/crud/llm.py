@@ -1,5 +1,4 @@
 from fastapi import HTTPException
-import openai
 import requests
 from requests import Session
 from app.api.v1.endpoints.files import get_db_schema
@@ -13,7 +12,7 @@ import sqlparse
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 from app.streamlit.token_counter import add_tokens, get_total_tokens
-
+from openai import AsyncOpenAI
 load_dotenv()
 
 nltk.download('wordnet')
@@ -78,7 +77,7 @@ def extract_relevant_schema(user_query: str, schema: dict) -> str:
     return json.dumps(sub_schema, indent=4)
 
 
-def translate_query(user_query: str, model: str) -> str:
+async def translate_query(user_query: str, model: str) -> str:
     glossary = {
         "cliente": "client",
         "usuario": "user",
@@ -112,7 +111,7 @@ def translate_query(user_query: str, model: str) -> str:
 
     # Call the translation model
     if model == "openai":
-        translation = _call_openai_for_translation(system_message)
+        translation = await _call_openai_for_translation(system_message)
     elif model == "mistral":
         translation = _call_mistral_for_translation(system_message)
     else:
@@ -126,18 +125,24 @@ def translate_query(user_query: str, model: str) -> str:
     return translation
     # Support function for translation with OpenAI
 
-def _call_openai_for_translation(system_message: str) -> str:
+async def _call_openai_for_translation(system_message: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        client = AsyncOpenAI()
+        response = await client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[{"role": "system", "content": system_message}]
         )    
-        total_tokens = response['usage']['total_tokens']
+        total_tokens = response.usage.total_tokens
         add_tokens(total_tokens)
         print(f"Tokens totales de la traduccion: {total_tokens}")
         print("TOKENS USADOS EN TOTAL", get_total_tokens())
-        return response.choices[0].message["content"]
+        
+        return response.choices[0].message.content
+    
+        
+        
     except Exception as e:
+        print("error1", e)
         raise HTTPException(status_code=500, detail="Error generating translation response.")
 
 # Support function for traslation with Mistral
@@ -158,18 +163,18 @@ def _call_mistral_for_translation(system_message: str) -> str:
 
 
 
-def generate_sql_query(user_query: str, db: Session, model: str) -> str:
+async def generate_sql_query(user_query: str, db: Session, model: str) -> str:
     
     full_schema = get_db_schema(db)
  
-    translate_query_response = translate_query(user_query, model)
+    translate_query_response = await translate_query(user_query, model)
     relevant_schema = extract_relevant_schema(translate_query_response, full_schema)
     print("Relevant Database Schema:", relevant_schema)
     
     system_message = create_system_message(relevant_schema)
 
     if model == "openai":
-        return _call_openai(system_message, translate_query_response, "sql")
+        return await _call_openai(system_message, translate_query_response, "sql")
     elif model == "mistral":
         return _call_mistral(system_message, translate_query_response, "sql")
     else:
@@ -228,7 +233,7 @@ def generate_sparql_query(user_query: str, db: Session, model: str ) -> str:
     
 
 # Function to generate a readable response
-def generate_human_readable_response(sql_results: list, user_query: str, model: str) -> str:
+async def generate_human_readable_response(sql_results: list, user_query: str, model: str) -> str:
     
     results_text = "\n".join([", ".join([f"{key}: {value}" for key, value in row.items()]) for row in sql_results])
     
@@ -242,27 +247,30 @@ def generate_human_readable_response(sql_results: list, user_query: str, model: 
        return("No se encontraron resultados para tu consulta. Por favor, intenta con otros criterios o verifica tu consulta.")
     
     if model == "openai":
-        return _call_openai_for_response(system_message)
+        return await _call_openai_for_response(system_message)
     elif model == "mistral":
         return _call_mistral_for_response(system_message)
     else:
         raise HTTPException(status_code=400, detail="Invalid model specified.")
 
 # Support function to generate readable response with OpenAI
-def _call_openai_for_response(system_message: str) -> str:
+async def _call_openai_for_response(system_message: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        client = AsyncOpenAI()
+        response = await client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[{"role": "system", "content": system_message}]
         )
-        total_tokens = response['usage']['total_tokens']
+        total_tokens = response.usage.total_tokens
         add_tokens(total_tokens)
         print(f"Tokens totales de verbalizacion: {total_tokens}")
         print("TOKENS USADOS EN TOTAL", get_total_tokens())
         
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
+        
     
     except Exception as e:
+        print("error2", e)
         raise HTTPException(status_code=500, detail="Error generating human-readable response.")
 
 #Support function to generate readable response with Mistral
@@ -282,9 +290,10 @@ def _call_mistral_for_response(system_message: str) -> str:
     
     
 
-def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
+async def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        client = AsyncOpenAI()
+        response = await client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
                 {"role": "system", "content": system_message},
@@ -292,10 +301,10 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
             ]
         )
 
-        total_tokens = response['usage']['total_tokens']
+        total_tokens = response.usage.total_tokens
         add_tokens(total_tokens) 
-        prompt_tokens = response['usage']['prompt_tokens']
-        completion_tokens = response['usage']['completion_tokens']
+        prompt_tokens = response.usage.prompt_tokens
+        completion_tokens = response.usage.completion_tokens
         
         print(f"Tokens del prompt (incluye schema): {prompt_tokens}")
         print(f"Tokens de la respuesta sql: {completion_tokens}")
@@ -303,14 +312,16 @@ def _call_openai(system_message: str, user_query: str, query_type: str) -> str:
         print("TOKENS USADOS EN TOTAL", get_total_tokens())
         
 
-        response_content = response.choices[0].message["content"]
+        response_content = response.choices[0].message.content
+        
         response_json = json.loads(response_content)
         print("MIRA", response_json)
         if query_type == "sql":
             return extract_sql_query(response_content)
         elif query_type == "sparql":
             return response_json.get("sparql_query")
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print("error3",e)
         raise HTTPException(status_code=500, detail="Error parsing the OpenAI response.")
     
 

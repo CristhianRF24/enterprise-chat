@@ -23,7 +23,6 @@ class QueryResponse(BaseModel):
     query: str 
     results: dict  
     
-# Modelo para las solicitudes
 class QueryRequest(BaseModel):
     question: str
 
@@ -35,7 +34,7 @@ async def read_root():
 
 @app.post("/generate_sql/", response_model=SQLQueryResponse) 
 async def generate_sql(request: SQLQueryRequest, db: Session = Depends(get_db)):
-    sql_query = generate_sql_query(request.user_query, db, model=request.model)
+    sql_query = await generate_sql_query(request.user_query, db, model=request.model)
     print('sql_query', sql_query)
 
     if not is_sql_query_safe(sql_query):
@@ -44,7 +43,7 @@ async def generate_sql(request: SQLQueryRequest, db: Session = Depends(get_db)):
     
     print('results', results)
     
-    human_readable_response = generate_human_readable_response(results, request.user_query, request.model)
+    human_readable_response = await generate_human_readable_response(results, request.user_query, request.model)
     
    
     return SQLQueryResponse(results=human_readable_response)
@@ -84,13 +83,3 @@ def query(request: QueryRequest):
         print(f"Error al procesar la consulta: {e}")
         raise HTTPException(status_code=500, detail="Error al procesar la consulta.")
 
-# Endpoint para obtener el esquema limitado
-@app.post("/limited-schema")
-def limited_schema(request: QueryRequest):
-    question = request.question
-    try:
-        schema = get_limited_schema(question)
-        return {"question": question, "schema": schema}
-    except Exception as e:
-        print(f"Error al obtener el esquema limitado: {e}")
-        raise HTTPException(status_code=500, detail="Error al obtener el esquema limitado.")
