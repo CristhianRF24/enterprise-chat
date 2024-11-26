@@ -142,7 +142,9 @@ async def _call_openai_for_translation(system_message: str) -> str:
         
         
     except Exception as e:
+
         print("error1", e)
+
         raise HTTPException(status_code=500, detail="Error generating translation response.")
 
 # Support function for traslation with Mistral
