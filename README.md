@@ -12,7 +12,7 @@ Before installation, create a Python virtual environment using version **3.12**:
 1. Ensure Python 3.12 is installed on your system. You can download it from the [official Python website](https://www.python.org/).
 2. Create a virtual environment:
    ```bash
-   python3.12 -m venv env
+   python 3.12.5 -m venv env
    ```
 3. Activate the virtual environment:
 
