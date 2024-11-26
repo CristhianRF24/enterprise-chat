@@ -12,10 +12,8 @@ from dotenv import load_dotenv
 from app.graphdb_integration import load_ttl_to_graphdb
 import json
 from rdflib import Graph
-
 from app.rdf_generator import generate_ttl
 
- 
 load_dotenv()
 router = APIRouter()
 
