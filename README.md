@@ -12,7 +12,7 @@ Before installation, create a Python virtual environment using version **3.12**:
 1. Ensure Python 3.12 is installed on your system. You can download it from the [official Python website](https://www.python.org/).
 2. Create a virtual environment:
    ```bash
-   python3.12 -m venv env
+   python 3.12.5 -m venv env
    ```
 3. Activate the virtual environment:
 
@@ -53,6 +53,12 @@ Proceed to the installation steps below.
     REPO_NAME = knowledge_graph
     SPARQL_ENDPOINT=http://127.0.0.1:8000/generate_sparql/
     SQL_ENDPOINT=http://127.0.0.1:8000/generate_sql/
+    AGENT_ENDPOINT=http://127.0.0.1:8000/queryAgent
+    ASK_AGENT_ENDPOINT=http://127.0.0.1:8000/files/ask/
+    PDF_UPLOAD_ENDPOINT=http://127.0.0.1:8000/files/uploadfile/
+    PDF_CHECK_ENDPOINT=http://127.0.0.1:8000/files/check-pdf-loaded/
+    LANGCHAIN_VERBOSE=false
+    LOG_FILE_PATH=logs/langchain_agent.log
     ```
 
 ## Use
