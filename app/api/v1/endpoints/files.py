@@ -1,6 +1,9 @@
 import re
+import time
+import unicodedata
 from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
 from langchain_text_splitters import CharacterTextSplitter
+import pdfplumber
 import rdflib
 import spacy
 from sqlalchemy.orm import Session
@@ -23,7 +26,9 @@ from langchain.document_loaders import PyPDFLoader
 from langdetect import detect
 from langchain.agents import initialize_agent, Tool, AgentType
 from langchain_openai import ChatOpenAI
+from sentence_transformers import SentenceTransformer, util
 import os
+import requests
 
 load_dotenv()
 router = APIRouter()
@@ -34,6 +39,8 @@ UPLOAD_FOLDER = './uploaded_files'
 VECTOR_STORE_FOLDER = './vector_stores'
 VECTOR_STORE_JSON = f'{VECTOR_STORE_FOLDER}/vector_store.json'
 
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
 class QueryRequest(BaseModel):
     query: str
     k: int
@@ -43,13 +50,33 @@ class UserQueryRequest(BaseModel):
     model: str 
 
 def clean_text(raw_text):
-    text = re.sub(r"metadata=\{.*?\}", "", raw_text)
-    text = re.sub(r"http[s]?://\S+", "", text)
-    text = re.sub(r"(?<![\.\?!])\n", " ", text) 
-    text = re.sub(r"Ignoring.*?object.*?\n", "", text)
-    text = re.sub(r"Special Issue.*?\n", "", text)
-    text = re.sub(r"\s{2,}", " ", text)
-    text = text.strip()
+    text = re.sub(r'\x00', '', text)
+    text = re.sub(r'\n+', ' ', text) 
+    text = unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode("utf-8")
+    text = re.sub(r"[^a-zA-Z0-9\s.,;:¿?¡!]", "", text) 
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text.lower()
+
+def split_text_into_chunks(text, chunk_size=500):
+    sentences = re.split(r'(?<=\.)\s+', text)
+    chunks = []
+    chunk = ""
+    for sentence in sentences:
+        if len(chunk + sentence) > chunk_size:
+            chunks.append(chunk)
+            chunk = sentence
+        else:
+            chunk += " " + sentence
+    if chunk:
+        chunks.append(chunk)
+    return chunks
+
+def extract_text_from_pdf(file_path):
+    with pdfplumber.open(file_path) as pdf:
+        text = ""
+        for page in pdf.pages:
+            text += page.extract_text()
     return text
 
 def lemmatize_text(text):
@@ -57,26 +84,44 @@ def lemmatize_text(text):
     lemmatized = " ".join([token.lemma_ for token in doc if not token.is_stop and not token.is_punct])
     return lemmatized
 
-def process_pdf(file_path):
-    loader = PyPDFLoader(file_path)
-    documents = loader.load()
-
-    processed_texts = []
-    for doc in documents:
-        cleaned_text = clean_text(doc.page_content)
-        lemmatized_text = lemmatize_text(cleaned_text)
-        doc.page_content = lemmatized_text
-        processed_texts.append(doc)
+def normalize_text(text: str) -> str:
+    text = re.sub(r'\x00', '', text)  
+    text = re.sub(r'\n+', ' ', text)  
+    text = unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode("utf-8")
+    text = re.sub(r"[^a-zA-Z0-9\s.,;:¿?¡!]", "", text)  
+    text = re.sub(r"\s+", " ", text).strip()  
     
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    return text_splitter.split_documents(processed_texts)
+    return text.lower()
 
-def create_vector_index(texts, existing_index=None):
-    embeddings = OpenAIEmbeddings()
-    if existing_index:
-        existing_index.add_documents(texts)
-        return existing_index
-    return FAISS.from_documents(texts, embeddings)
+def process_pdf(file_path: str, chunk_size: int = 500) -> list:
+    text = ""
+    with pdfplumber.open(file_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or "" 
+
+    text = normalize_text(text)
+    print("Texto limpio:", text) 
+    chunks = split_text_into_chunks(text, chunk_size=chunk_size)
+    
+    return chunks
+
+def create_vector_index(texts):
+    embeddings = embedding_model.encode(texts, convert_to_tensor=False).tolist()
+    vector_store = [{"text": text, "embedding": embedding} for text, embedding in zip(texts, embeddings)]
+    return vector_store
+
+def save_vector_store(vector_store, file_path):
+    with open(file_path, "w") as f:
+        json.dump(vector_store, f)
+
+def load_vector_store(file_path):
+    with open(file_path, "r") as f:
+        vector_store = json.load(f)
+    return vector_store
+
+def combine_vector_stores(existing_store, new_store):
+    combined_store = existing_store + new_store
+    return combined_store
 
 def create_tools(vector_store):
     retriever = vector_store.as_retriever()
@@ -99,12 +144,8 @@ def create_agent(tools):
 
 @router.post('/uploadfile/')
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    
-    # Create the folder if it does not exist
     Path(UPLOAD_FOLDER).mkdir(parents=True, exist_ok=True)
     Path(VECTOR_STORE_FOLDER).mkdir(parents=True, exist_ok=True)
-
-    #save the file to the file systema
     file_location = f"{UPLOAD_FOLDER}/{file.filename}"
 
     existing_file = file_exists(db, filename=file.filename, filepath=file_location)
@@ -120,57 +161,22 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     new_vector_store = create_vector_index(texts)
 
     if Path(VECTOR_STORE_JSON).is_file():
-        existing_index = FAISS.load_local(VECTOR_STORE_FOLDER, OpenAIEmbeddings())
-        existing_index.add_documents(new_vector_store.docstore._dict.values())
+        existing_vector_store = load_vector_store(VECTOR_STORE_JSON)
+        combined_vector_store = combine_vector_stores(existing_vector_store, new_vector_store)
     else:
-        existing_index = new_vector_store
+        combined_vector_store = new_vector_store
 
-    existing_index.save_local(VECTOR_STORE_FOLDER)
+    save_vector_store(combined_vector_store, VECTOR_STORE_JSON)
 
     create_or_update_vector_store(db, VECTOR_STORE_JSON)
 
     return {"filename": file.filename, "file_id": db_file.id}
  
-@router.post('/ask/')
-async def ask_question(request: UserQueryRequest, db: Session = Depends(get_db)):
-    """
-    Endpoint para recibir una pregunta del usuario y responder utilizando el agente.
-    """
-    if not Path(f"{VECTOR_STORE_FOLDER}/index.faiss").is_file() or not Path(f"{VECTOR_STORE_FOLDER}/index.pkl").is_file():
-        raise HTTPException(status_code=404, detail="Índice vectorial no encontrado. Por favor, sube un archivo primero.")
-    
-    try:
-        embeddings = OpenAIEmbeddings()
-        vector_store = FAISS.load_local(VECTOR_STORE_FOLDER, embeddings, allow_dangerous_deserialization=True)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al cargar el vector store: {str(e)}")
-
-    tools = create_tools(vector_store)
-    agent = create_agent(tools)
-
-    detected_language = detect(request.query)
-    
-    if detected_language == 'es': 
-        translator = Translator(to_lang="en", from_lang="es")
-        translated_query = translator.translate(request.query)
-        request.query = translated_query
-    try:
-        response = agent.invoke(request.query)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al ejecutar el agente: {str(e)}")
-
-    return {"query": request.query, "response": response}
 
 @router.get('/check-pdf-loaded/')
 async def check_pdf_loaded():
-    """
-    Endpoint para verificar si hay algún archivo PDF cargado en el sistema.
-    """
-    # Verificar si hay archivos PDF en la carpeta de carga
     pdf_files = [f for f in Path(UPLOAD_FOLDER).iterdir() if f.suffix.lower() == '.pdf']
 
-    # Si hay al menos un archivo PDF, devolver True, de lo contrario False
     if pdf_files:
         return {"pdf_loaded": True}
     else:
