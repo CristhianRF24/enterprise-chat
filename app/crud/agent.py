@@ -16,7 +16,7 @@ load_dotenv()
 
 db_uri = os.getenv("DATABASE_URL")
 db = SQLDatabase.from_uri(db_uri)  
-llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
+llm = ChatOpenAI(temperature=0.2, model="gpt-3.5-turbo")
 agent = create_sql_agent(llm=llm, db=db, verbose=True)
 
 
@@ -58,7 +58,7 @@ def humanize_response(sql_query, sql_result):
         Los resultados obtenidos son los siguientes:
         {sql_result_str}
 
-        Reformula esta información para que sea comprensible y útil en un lenguaje natural.
+        Reformula esta información de forma que sea fácil de entender para un usuario no técnico.
         """)
 
         humanized_response = llm.invoke(prompt.format_prompt(
