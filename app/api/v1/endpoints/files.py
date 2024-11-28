@@ -29,6 +29,7 @@ from langchain_openai import ChatOpenAI
 from sentence_transformers import SentenceTransformer, util
 import os
 import requests
+from app.rdf_generator import generate_ttl
 
 load_dotenv()
 router = APIRouter()
