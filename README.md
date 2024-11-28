@@ -84,5 +84,5 @@ Note: Ensure the GRAPHDB_URL and REPO_NAME values in your .env file match your G
 
 ### Arquitectura del Proyecto
 
-![Diagrama de arquitectura](seller-chat.drawio.svg)
+![Diagrama de arquitectura](seller-chat.png)
 
