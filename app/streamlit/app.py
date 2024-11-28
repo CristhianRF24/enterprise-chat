@@ -11,6 +11,7 @@ sql_endpoint = os.getenv("SQL_ENDPOINT")
 pdf_upload_endpoint = os.getenv("PDF_UPLOAD_ENDPOINT")
 ask_model_endpoint = os.getenv("ASK_AGENT_ENDPOINT")
 pdf_check_endpoint =  os.getenv("PDF_CHECK_ENDPOINT")
+query_agent_endpoint = os.getenv("AGENT_ENDPOINT")
 
 if "page" not in st.session_state:
     st.session_state.page = "chat_bdd"
