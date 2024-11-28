@@ -20,3 +20,7 @@ streamlit-toggle-switch
 sqlparse
 nltk
 unidecode
+translate
+langdetect
+faiss-cpu
+
