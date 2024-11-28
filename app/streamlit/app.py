@@ -250,8 +250,7 @@ def chat_pdf():
     def send_message():
         user_input = st.session_state.input
         if user_input:
-            if not st.session_state.pdf_loaded:  # Verificar si no hay PDF cargado
-                # Agregar un mensaje en el historial del chat indicando que falta el PDF
+            if not st.session_state.pdf_loaded:  
                 st.session_state.history_chat_pdf.append({
                     "user": user_input,
                     "response": "Por favor añade un PDF antes de continuar."
@@ -262,7 +261,7 @@ def chat_pdf():
                     response = requests.post(ask_model_endpoint, json=payload)
                     if response.status_code == 200:
                         data = response.json()
-                        output = data["response"].get("output", "No se obtuvo salida del modelo.")
+                        output = data["response"]
                         if output == "Agent stopped due to iteration limit or time limit.":
                             results = "El modelo se detuvo debido a los límites de tiempo o iteración."
                         else:
@@ -294,7 +293,7 @@ def chat_pdf():
                     response = requests.post(pdf_upload_endpoint, files=files)
                     if response.status_code == 200:
                         st.success("PDF cargado con éxito.")
-                        st.session_state.pdf_loaded = True  # Actualizar estado global
+                        st.session_state.pdf_loaded = True
                         st.session_state.history_chat_pdf.append({
                             "pdf_upload": f"El PDF {pdf_title}  fue cargado exitosamente."
                         })
