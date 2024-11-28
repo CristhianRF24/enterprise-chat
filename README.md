@@ -84,11 +84,5 @@ Note: Ensure the GRAPHDB_URL and REPO_NAME values in your .env file match your G
 
 ### Arquitectura del Proyecto
 
-```mermaid
-graph TD;
-    Usuario-->Frontend;
-    Frontend-->API[(FastAPI)];
-    API-->DB[(MySQL)];
-    API-->OpenAI[(API de OpenAI)];
-    API-->Mistral[(Api de Mistral)]
+![Diagrama de arquitectura](seller-chat.drawio.svg)
 
