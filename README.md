@@ -54,7 +54,7 @@ Proceed to the installation steps below.
     SPARQL_ENDPOINT=http://127.0.0.1:8000/generate_sparql/
     SQL_ENDPOINT=http://127.0.0.1:8000/generate_sql/
     AGENT_ENDPOINT=http://127.0.0.1:8000/queryAgent
-    ASK_AGENT_ENDPOINT=http://127.0.0.1:8000/files/ask/
+    ASK_AGENT_ENDPOINT=http://127.0.0.1:8000/ask/
     PDF_UPLOAD_ENDPOINT=http://127.0.0.1:8000/files/uploadfile/
     PDF_CHECK_ENDPOINT=http://127.0.0.1:8000/files/check-pdf-loaded/
     LANGCHAIN_VERBOSE=false

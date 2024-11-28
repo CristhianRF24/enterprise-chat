@@ -22,7 +22,8 @@ def navigate_to(page_name):
 def chat_page():
     st.markdown("<h1 style='text-align: center;'>Charla con la Base de Datos</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center;'>Centro Movil</h1>", unsafe_allow_html=True)
-
+    if st.button("Ir a Chatear con PDFs"):
+        navigate_to("chat_pdf")
     st.markdown("""
         <style>
         .bubble-user {
