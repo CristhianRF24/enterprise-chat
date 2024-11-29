@@ -25,6 +25,30 @@ Before installation, create a Python virtual environment using version **3.12**:
    ```bash
    .\env\Scripts\activate
    ```
+
+4. In your MySQL database, execute the following commands to create the necessary tables:
+
+vector_stores table:
+ ```bash
+CREATE TABLE vector_stores (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    filepath TEXT NOT NULL,
+    INDEX (id)
+);
+```
+
+files table:
+```bash
+CREATE TABLE files (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    filename VARCHAR(255) NOT NULL,
+    filetype VARCHAR(50) NOT NULL,
+    filepath VARCHAR(255) NOT NULL,
+    INDEX (id)
+);
+```
+Ensure that the database connection details in the .env file match your local setup.
+
 Proceed to the installation steps below.
    
 ## Instalation
